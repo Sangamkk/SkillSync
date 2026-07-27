@@ -13,8 +13,6 @@ error CertificateAlreadyExists();
 
 error CertificateNotFound();
 
-error UnauthorizedIssuer();
-
 error CertificateAlreadyRevoked();
 
 error ProjectAlreadyExists();    
@@ -31,6 +29,13 @@ error ProjectVerificationAlreadyRevoked();
 
 error VerificationNotFound();
 
+error UnauthorisedOperation();
+
+error RequestManagerAlreadySet();
+
+error NotOwner();
+
+
 //events
 event ApplicantCreated(address  indexed applicantaddress);
 
@@ -43,6 +48,15 @@ event Projectadded( address indexed student,bytes32 indexed  projectHash );
 event Projectverified(address indexed verifier,bytes32 indexed projecthash);
 
  event ProjectVerificationRevoked(address indexed verifier,bytes32 indexed projectHash);
+
+
+ //variables
+
+
+ address public requestManager;
+address public immutable owner;
+
+
 //structs
 
 
@@ -77,8 +91,43 @@ mapping(bytes32 => Certificate) public certificates;
 
 mapping(bytes32 => Project) public projects;
 
+//modifier
+
+
+
+modifier onlyOwner() {
+    if (msg.sender != owner) revert NotOwner();
+    _;
+}
+modifier onlyRequestManager(){
+    if(msg.sender!=requestManager){
+        revert UnauthorisedOperation();
+    }
+    _;
+}
+//constructor
+
+constructor() {
+    owner = msg.sender;
+}
+
+//owner sets reqmanager
+function setRequestManager(address _requestManager)
+    external
+    onlyOwner
+{
+    if (requestManager != address(0)) {
+        revert RequestManagerAlreadySet();
+    }
+
+    requestManager = _requestManager;
+}
+
+
 
 //applicant
+
+//directly called by appllicant
 function createApplicant() external {
 
     if(applicants[msg.sender].exists){
@@ -98,7 +147,7 @@ function addCertificate(
     Types.CredentialType credentialType,
     address issuer,
     uint64 expiresAt
-) external {
+) external onlyRequestManager{
 
     if (!applicants[student].exists) {
         revert ApplicantNotFound();
@@ -143,7 +192,7 @@ if (cert.issuer != address(0)) {
 
 
 
-function revokeCertificate(bytes32 certificateHash) external {
+function revokeCertificate(bytes32 certificateHash) external onlyRequestManager{
 
     Certificate storage cert = certificates[certificateHash];
 
@@ -159,10 +208,13 @@ function revokeCertificate(bytes32 certificateHash) external {
 }
 
 //project
+
+
+//addproject directly called by the applicant no req needed
 function addProject(
-    address student,
     bytes32 projectHash
 ) external {
+    address student=msg.sender;
 
     if (!applicants[student].exists) {
         revert ApplicantNotFound();
@@ -187,7 +239,7 @@ project.owner = student;
 function addProjectVerification(
     bytes32 projectHash,
     address verifier
-) external {
+) external onlyRequestManager{
 
     if (!projects[projectHash].exists) {
         revert ProjectNotFound();
@@ -221,7 +273,7 @@ function addProjectVerification(
 function revokeProjectVerification(
     bytes32 projectHash,
     address verifier
-) external {
+) external onlyRequestManager{
 
     if (!projects[projectHash].exists) {
         revert ProjectNotFound();

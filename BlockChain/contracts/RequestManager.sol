@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 import "./libraries/Types.sol";
 import "./ApplicantManager.sol";
+import "./IssuerRegistry.sol";
 
 contract RequestManager {
 
@@ -12,6 +13,7 @@ contract RequestManager {
     error UnauthorizedVerifier();
     error InvalidExpiry();
     error InvalidRequestType();
+    error InvalidIssuer();
 
     //events
     event RequestCreated(uint256 indexed id, address indexed student);
@@ -19,8 +21,9 @@ contract RequestManager {
     event RequestRejected(uint256 indexed id);
 
     //constructor
-    constructor(address applicantManagerAddress) {
+    constructor(address applicantManagerAddress,address issuerRegistryaddress) {
         applicantManager = ApplicantManager(applicantManagerAddress);
+        issuerRegistry= IssuerRegistry(issuerRegistryaddress);
     }
 
     //struct
@@ -39,13 +42,19 @@ contract RequestManager {
     //statevars
     mapping(uint256 => Request) public requests;
 
+
+    mapping(address => uint256[]) private issuerRequests;
+    mapping(address => uint256[]) private studentRequests;
+
     // credentialHash -> expectedVerifier -> requestType -> requestId
     mapping(bytes32 => mapping(address => mapping(Types.RequestType => uint256)))
         public activeRequests;
 
     uint256 public nextRequestId;
 
+//contracts
     ApplicantManager public immutable applicantManager;
+    IssuerRegistry public immutable issuerRegistry;
 
     //functions
     function createRequest(
@@ -71,6 +80,9 @@ contract RequestManager {
         ) {
             revert InvalidExpiry();
         }
+        if (!issuerRegistry.isVerifiedIssuer(_expectedVerifier)) {
+            revert InvalidIssuer();
+        }
 
         uint256 _id = ++nextRequestId;
 
@@ -85,6 +97,9 @@ contract RequestManager {
             createdAt: uint64(block.timestamp),
             expiresAt: _expiresAt
         });
+
+        issuerRequests[_expectedVerifier].push(_id);
+        studentRequests[msg.sender].push(_id);
 
         activeRequests[_credentialHash][_expectedVerifier][_requestType] = _id;
 
@@ -192,7 +207,7 @@ contract RequestManager {
     }
 
     // ApplicantManager dispatch
-
+    //internal function
     function _approveCertificate(
         Request storage request
     ) internal {
@@ -234,4 +249,24 @@ contract RequestManager {
             msg.sender
         );
     }
+function getIssuerRequests()
+    external
+    view
+    returns (uint256[] memory)
+{
+  
+    return issuerRequests[msg.sender];
+}
+
+function getStudentRequests()
+    external
+    view
+    returns (uint256[] memory)
+{
+    return studentRequests[msg.sender];
+}
+
+
+
+
 }
