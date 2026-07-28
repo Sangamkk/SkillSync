@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 import "./libraries/Types.sol";
 import "./ApplicantManager.sol";
-import "./IssuerRegistry.sol";
+import "./OrganisationRegistry.sol";
 
 contract RequestManager {
 
@@ -21,9 +21,9 @@ contract RequestManager {
     event RequestRejected(uint256 indexed id);
 
     //constructor
-    constructor(address applicantManagerAddress,address issuerRegistryaddress) {
+    constructor(address applicantManagerAddress,address orgRegistryaddress) {
         applicantManager = ApplicantManager(applicantManagerAddress);
-        issuerRegistry= IssuerRegistry(issuerRegistryaddress);
+        organisationRegistry= OrganisationRegistry(orgRegistryaddress);
     }
 
     //struct
@@ -43,8 +43,8 @@ contract RequestManager {
     mapping(uint256 => Request) public requests;
 
 
-    mapping(address => uint256[]) private issuerRequests;
-    mapping(address => uint256[]) private studentRequests;
+mapping(address => uint256[]) private outgoingRequests;
+mapping(address => uint256[]) private incomingRequests;
 
     // credentialHash -> expectedVerifier -> requestType -> requestId
     mapping(bytes32 => mapping(address => mapping(Types.RequestType => uint256)))
@@ -54,7 +54,7 @@ contract RequestManager {
 
 //contracts
     ApplicantManager public immutable applicantManager;
-    IssuerRegistry public immutable issuerRegistry;
+    OrganisationRegistry public immutable organisationRegistry;
 
     //functions
     function createRequest(
@@ -80,7 +80,7 @@ contract RequestManager {
         ) {
             revert InvalidExpiry();
         }
-        if (!issuerRegistry.isVerifiedIssuer(_expectedVerifier)) {
+        if (!organisationRegistry.isActiveOrganisation(_expectedVerifier)) {
             revert InvalidIssuer();
         }
 
@@ -98,8 +98,8 @@ contract RequestManager {
             expiresAt: _expiresAt
         });
 
-        issuerRequests[_expectedVerifier].push(_id);
-        studentRequests[msg.sender].push(_id);
+outgoingRequests[msg.sender].push(_id);
+incomingRequests[_expectedVerifier].push(_id);
 
         activeRequests[_credentialHash][_expectedVerifier][_requestType] = _id;
 
@@ -255,7 +255,7 @@ function getIssuerRequests()
     returns (uint256[] memory)
 {
   
-    return issuerRequests[msg.sender];
+    return incomingRequests[msg.sender];
 }
 
 function getStudentRequests()
@@ -263,7 +263,7 @@ function getStudentRequests()
     view
     returns (uint256[] memory)
 {
-    return studentRequests[msg.sender];
+    return outgoingRequests[msg.sender];
 }
 
 
