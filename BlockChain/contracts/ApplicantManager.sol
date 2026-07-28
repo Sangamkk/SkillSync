@@ -105,7 +105,7 @@ struct Applicant {
     bool exists;
     bytes32[] certificates;
     bytes32[] projects;
-     bytes32[] employments;
+    bytes32[] employments;
 }
 
 
