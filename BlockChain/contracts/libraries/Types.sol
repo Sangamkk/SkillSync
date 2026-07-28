@@ -25,11 +25,30 @@ library Types {
         bool revoked;
     }
 
-        enum RequestType {
-        AddCertificate,
-        RevokeCertificate,
-        AddProjectVerification,
-        RevokeProjectVerification
-    }
+enum RequestType {
+    AddCertificate,
+    RevokeCertificate,
+    AddProjectVerification,
+    RevokeProjectVerification,
+    AddEmployment,
+    TerminateEmployment
+}
+    
+enum OrganizationType {
+    Company,
+    University,
+    ResearchLab,
+    NGO,
+    Government,
+    Other
+}
 
+enum EmploymentType {
+    Internship,
+    Employment
+}
+enum ApprovalType {
+    Organisation,
+    Student
+}
 }
