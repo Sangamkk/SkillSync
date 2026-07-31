@@ -1,6 +1,9 @@
-import api from "./api";
+import axios from "axios";
 
-export const getProfile=async(userData)=>{
-        const response=await api.get("/profile",userData);
+const STUDENT_API = axios.create({
+    baseURL: "http://localhost:5000/api/student"
+});
+export const getProfile=async(walletAddress)=>{
+        const response=await STUDENT_API.get("/profile",{params:{walletAddress}});
         return response.data.user;
 }

@@ -7,7 +7,7 @@ import Register from "./pages/Register";
 
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
-
+import Certificate from "./pages/student/Certificate";
 
 function App() {
   return (
@@ -21,6 +21,8 @@ function App() {
 
         {/* Student Routes */}
         <Route path="/student" element={<StudentDashboard />} />
+        <Route path="/certificate" element={<Certificate/>} />
+
 
       </Routes>
     </BrowserRouter>
