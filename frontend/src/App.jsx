@@ -4,6 +4,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+import RegisterOrganisation from "./pages/RegisterOrganisation";
+import AdminDashboard from "./pages/AdminDashboard";
 
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -23,7 +25,8 @@ function App() {
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/certificate" element={<Certificate/>} />
 
-
+        <Route path="/org/register" element={<RegisterOrganisation />}/>
+        <Route path="/admin" element={<AdminDashboard />}/>
       </Routes>
     </BrowserRouter>
   );
