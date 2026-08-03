@@ -17,3 +17,14 @@ export const  getStudentCertificatesService = async (studentId) => {
     });
 
 };
+
+export const getCertificateByHashService =
+async (hash) => {
+
+    return await Certificate.findOne({
+
+        certificateHash: hash
+
+    });
+
+};
