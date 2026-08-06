@@ -1,0 +1,108 @@
+import axios from "axios";
+
+const api = axios.create({
+    baseURL: "http://localhost:5000/api",
+});
+
+export const getAllJobs = async () => {
+  const response = await api.get("/employment/jobs");
+  return response.data;
+};
+
+export const applyToJob = async (jobId) => {
+  const response = await api.post(
+    `/employment/jobs/${jobId}/apply`
+  );
+
+  return response.data;
+};
+
+export const createJob = async (jobData) => {
+  const response = await api.post(
+    "/employment/jobs",
+    jobData
+  );
+
+  return response.data;
+};
+
+export const getMyJobs = async () => {
+  const response = await api.get("/employment/jobs/my");
+  return response.data;
+};
+
+export const deleteJob = async (jobId) => {
+  const response = await api.delete(
+    `/employment/jobs/${jobId}`
+  );
+
+  return response.data;
+};
+
+
+export const getApplicants = async (jobId) => {
+  const response = await api.get(
+    `/employment/jobs/${jobId}/applications`
+  );
+
+  return response.data;
+};
+
+export const createEmploymentOffer = async (
+  applicationId,
+  offerId,
+  employmentHash,
+  txHash
+) => {
+  const response = await api.post(
+    `/employment/applications/${applicationId}/offer`,
+    {
+      offerId,
+      employmentHash,
+      txHash,
+    }
+  );
+
+  return response.data;
+};
+
+export const getMyOffers = async () => {
+  const response = await api.get(
+    "/employment/offers"
+  );
+
+  return response.data;
+};
+
+export const acceptOffer = async (offerId) => {
+  const response = await api.post(
+    `/employment/offers/${offerId}/accept`
+  );
+
+  return response.data;
+};
+
+export const rejectOffer = async (offerId) => {
+  const response = await api.post(
+    `/employment/offers/${offerId}/reject`
+  );
+
+  return response.data;
+};
+
+export const getOrganisationEmployees =
+  async () => {
+    const response =
+      await api.get(
+        "/employment/employees"
+      );
+
+    return response.data;
+  };
+
+  export const terminateEmployment =
+  async (offerId) => {
+    return api.post(
+      `/employment/employees/${offerId}/terminate`
+    );
+};

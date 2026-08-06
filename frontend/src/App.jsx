@@ -10,6 +10,14 @@ import AdminDashboard from "./pages/AdminDashboard";
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
 import Certificate from "./pages/student/Certificate";
+import Jobs from "./pages/student/Jobs";
+import StudentOffers from "./pages/student/StudentOffers";
+
+// Organisation Pages
+import CreateJob from "./pages/Organisation/CreateJob";
+import MyJobs from "./pages/Organisation/MyJobs";
+import Applicants from "./pages/Organisation/Applicants";
+import  Employees from "./pages/Organisation/Employee";
 
 function App() {
   return (
@@ -23,10 +31,46 @@ function App() {
 
         {/* Student Routes */}
         <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/certificate" element={<Certificate/>} />
+        <Route path="/certificate" element={<Certificate />} />
+        <Route path="/student/jobs" element={<Jobs />} />
+        <Route
+          path="/student/offers"
+          element={<StudentOffers />}
+        />
 
-        <Route path="/org/register" element={<RegisterOrganisation />}/>
-        <Route path="/admin" element={<AdminDashboard />}/>
+        {/* Organisation Routes */}
+        <Route
+          path="/org/register"
+          element={<RegisterOrganisation />}
+        />
+
+        <Route
+          path="/organisation/create-job"
+          element={<CreateJob />}
+        />
+
+        <Route
+          path="/organisation/jobs"
+          element={<MyJobs />}
+        />
+
+        <Route
+          path="/organisation/jobs/:jobId/applications"
+          element={<Applicants />}
+        />
+
+
+
+        <Route
+  path="/organisation/employees"
+  element={<Employees />}
+/>
+        {/* Admin */}
+        <Route
+          path="/admin"
+          element={<AdminDashboard />}
+        />
+
       </Routes>
     </BrowserRouter>
   );
