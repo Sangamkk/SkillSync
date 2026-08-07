@@ -20,7 +20,8 @@ const OrganisationRequests = () => {
             console.log("Request:", request);
             const certificate = await getCertificateByHash(request.credentialHash);
             console.log("Certificate:", certificate);
-            console.log(certificate.certificateUrl);
+            console.log(certificate);
+            console.log(certificate.certificateURL);
             data.push({
                 request,
                 certificate
@@ -51,7 +52,7 @@ const OrganisationRequests = () => {
                             {item.certificate.certificateType}
                         </p>
                         <a
-                            href={item.certificate.certificateUrl}
+                            href={item.certificate.certificateURL}
                             target="_blank"
                             rel="noreferrer"
                             className="text-blue-600 underline"
