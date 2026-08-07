@@ -10,3 +10,8 @@ export const getCertificates = async (studentId) => {
     const response = await axios.get(`http://localhost:5000/api/certificate/${studentId}`);
     return response.data;
 };
+
+export const getCertificateByHash = async (hash) => {
+    const response = await axios.get(`http://localhost:5000/api/certificate/hash/${hash}`);
+    return response.data.certificate;
+};

@@ -6,6 +6,8 @@ import Register from "./pages/Register";
 
 import RegisterOrganisation from "./pages/RegisterOrganisation";
 import AdminDashboard from "./pages/AdminDashboard";
+import OrganisationLogin from "./pages/orgLogin";
+import OrganisationDashboard from "./pages/organizationDashboard";
 
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -71,6 +73,11 @@ function App() {
           element={<AdminDashboard />}
         />
 
+        <Route path="/org/register" element={<RegisterOrganisation />}/>
+        <Route path="/org-login" element={<OrganisationLogin />}/>
+        <Route path="/organisation" element={<OrganisationDashboard />}/>
+        <Route path="/admin" element={<AdminDashboard />}/>
+        
       </Routes>
     </BrowserRouter>
   );

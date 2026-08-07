@@ -1,6 +1,7 @@
 import {
     uploadCertificateService,
-    getStudentCertificatesService
+    getStudentCertificatesService,
+    getCertificateByHashService
 } from "../services/certificate.services.js";
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
@@ -122,3 +123,49 @@ export const getStudentCertificates = async (req, res) => {
     }
 
 };
+
+export const getCertificateByHash = async (req, res) => {
+
+    try {
+
+        const { hash } = req.params;
+
+        const certificate =
+            await getCertificateByHashService(hash);
+
+        if (!certificate) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Certificate not found"
+
+            });
+
+        }
+
+        res.status(200).json({
+
+            success: true,
+
+            certificate
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
