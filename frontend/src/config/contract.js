@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import ApplicantManager from "../abhi/ApplicantManager.json"
 
 export const CONTRACT_ADDRESS =
-  "0x71a1B734439dcC1c6aF3c8B01a030F524FcfFf72";
+  import.meta.env.VITE_APPLICANT_MANAGER_ADDRESS;
 
 export const getContract = async () => {
   if (!window.ethereum) {

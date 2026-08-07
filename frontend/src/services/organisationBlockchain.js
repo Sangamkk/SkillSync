@@ -18,6 +18,15 @@ export const registerOrganisation = async (wallet, organisationType) => {
         organisationType
     );
 
+export const registerOrganisation =async(wallet,organisationType)=>{
+    
+    const contract=await getOrganisationRegistry();
+
+console.log(
+    "Owner:",
+    await contract.owner()
+);
+    const tx=await contract.registerOrganisation(wallet,organisationType);
     await tx.wait();
 
     return tx.hash;
