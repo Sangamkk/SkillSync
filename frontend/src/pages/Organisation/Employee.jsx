@@ -1,33 +1,23 @@
-import {
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  getOrganisationEmployees,terminateEmployment 
-} from "../../services/employmentService";
+import {  useEffect,  useState } from "react";
+import {  getOrganisationEmployees, terminateEmployment } from "../../services/employmentService";
 import {terminateEmployment as terminateEmploymentOnChain} from "../../services/blockchainService";
+
 function Employees() {
-  const [employees, setEmployees] =
-    useState([]);
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     fetchEmployees();
   }, []);
 
   async function fetchEmployees() {
-    const data =
-      await getOrganisationEmployees();
-
+    const data = await getOrganisationEmployees();
     setEmployees(data);
   }
 
   async function handleTerminate(offerId) {
     try {
-
         // Blockchain
         await terminateEmploymentOnChain(offerId);
-
         // MongoDB / Backend
       await terminateEmployment(offerId);
     } catch (err) {

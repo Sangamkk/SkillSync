@@ -111,8 +111,6 @@ export const getOrganisationOffers =
 
 export const terminateEmployment =
   async (offerId) => {
-    const contract =
-      await getEmploymentContract();
-
+    const contract = await getEmploymentContract();
       return await contract.endEmployment(offerId);
   }

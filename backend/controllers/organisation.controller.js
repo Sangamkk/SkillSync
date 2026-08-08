@@ -134,9 +134,7 @@ export const rejectApplication = async (req, res) => {
 };
 
 export const getVerifiedOrganisations = async (req, res) => {
-
     try {
-
         const organisations = await OrganisationApplication.find(
                 { status: "Approved" },
                 {
@@ -144,19 +142,14 @@ export const getVerifiedOrganisations = async (req, res) => {
                     walletAddress: 1
                 }
             );
-
         res.status(200).json({
             success: true,
             organisations
         });
-
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 };

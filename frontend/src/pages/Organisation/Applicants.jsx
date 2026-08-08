@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ethers } from "ethers";
-import { createOffer }
-from "../../services/blockchainService";
+import { createOffer } from "../../services/blockchainService";
 import {
   getApplicants,
   createEmploymentOffer,
 } from "../../services/employmentService";
+import { EmploymentType } from "../../utils/enums";
 
 function Applicants() {
   const { jobId } = useParams();
 
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [employmentType, setEmploymentType] = useState("");
+  const [deadline, setDeadline] = useState("");
 
   useEffect(() => {
     fetchApplicants();
@@ -29,37 +31,37 @@ function Applicants() {
     }
   };
 
-const handleOffer = async (application) => {
-  try {
+  const handleOffer = async (application) => {
+    try {
 
-    const employmentHash =
-      crypto.randomUUID();
+      const employmentHash = crypto.randomUUID();
       const employmentHashBytes = ethers.id(employmentHash);
-console.log(application);
-console.log(application.student);
-console.log(employmentHash);
-console.log(employmentHashBytes);
-    const {txHash,offerId}=
-      await createOffer(
-        employmentHashBytes,
-        0, //hardcoded internship
-        application.student.walletAddress,
-        0
+
+      const deadlineTimestamp = Math.floor( new Date(deadline).getTime() / 1000 );
+
+      //BlockChain
+      const { txHash, offerId } =
+        await createOffer(
+          employmentHashBytes,
+          EmploymentType[employmentType],
+          application.student.walletAddress,
+          deadlineTimestamp
+        );
+
+      //MongoDB
+      await createEmploymentOffer(
+        application._id,
+        offerId,
+        employmentHash,
+        txHash
       );
 
-await createEmploymentOffer(
-  application._id,
-  offerId,
-  employmentHash,
-  txHash
-);
+      alert("Offer Sent");
 
-    alert("Offer Sent");
-
-  } catch (err) {
-    console.error(err);
-  }
-};
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div>
@@ -84,6 +86,38 @@ await createEmploymentOffer(
             <p>
               {application.student?.email}
             </p>
+            <select
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value)}
+              className="w-full border rounded-lg p-3"
+              required
+            >
+              <option value="">
+                Select Type
+              </option>
+
+              <option value="Internship">
+                Internship
+              </option>
+
+              <option value="Employment">
+                Employment
+              </option>
+            </select>
+
+            <div>
+              <label className="font-semibold">
+                Application Deadline
+              </label>
+
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="w-full border rounded-lg p-3"
+                required
+              />
+            </div>
 
             <p>
               Wallet:
@@ -99,16 +133,16 @@ await createEmploymentOffer(
 
             {application.status ===
               "Applied" && (
-              <button
-                onClick={() =>
-                  handleOffer(
-                    application
-                  )
-                }
-              >
-                Send Offer
-              </button>
-            )}
+                <button
+                  onClick={() =>
+                    handleOffer(
+                      application
+                    )
+                  }
+                >
+                  Send Offer
+                </button>
+              )}
           </div>
         ))
       )}

@@ -2,29 +2,30 @@ import { useState, useEffect } from "react";
 import { uploadCertificate } from "../../services/certificateService";
 import { createVerificationRequest } from "../../services/requestService";
 import { getVerifiedOrganisations } from "../../services/adminService";
+import { CredentialType, RequestType } from "../../utils/enums";
+
 
 const UploadCertificate = () => {
 
     const [formData, setFormData] = useState({
         certificateName: "",
         issuer: "",
-        certificateType: "Course",
+        certificateType: "",
         issueDate: "",
         expiryDate: "",
-        description: ""
+        description: "",
+        hasExpiry: "yes"
     });
 
     const [organisations, setOrganisations] = useState([]);
     const [selectedIssuerWallet, setSelectedIssuerWallet] = useState("");
-
     const [file, setFile] = useState(null);
 
     useEffect(() => {
-
         const loadOrganisations = async () => {
             try {
-                const data = await getVerifiedOrganisations();
-                setOrganisations(data);
+                const data = await getVerifiedOrganisations();// backend
+                setOrganisations(data);//fetch verified organization
             }
             catch (error) {
                 console.log(error);
@@ -43,10 +44,8 @@ const UploadCertificate = () => {
     const handleIssuerChange = (e) => {
         const wallet = e.target.value;
         setSelectedIssuerWallet(wallet);
-        const organisation = organisations.find(
-            (org) => org.walletAddress === wallet
-        );
-        setFormData({...formData,issuer: organisation?.organisationName || ""});
+        const organisation = organisations.find((org) => org.walletAddress === wallet);
+        setFormData({ ...formData, issuer: organisation?.organisationName || "" });
     };
 
     const handleFileChange = (e) => {
@@ -54,7 +53,14 @@ const UploadCertificate = () => {
     };
 
     const handleSubmit = async (e) => {
+
         e.preventDefault();
+
+        let expiry = 0;
+
+        if (formData.hasExpiry === "yes" && formData.expiryDate) {
+            expiry = Math.floor(new Date(formData.expiryDate).getTime() / 1000);
+        }
         if (!file) {
             alert("Please select a certificate.");
             return;
@@ -69,18 +75,19 @@ const UploadCertificate = () => {
             data.append("student", user._id);
             data.append("certificateName", formData.certificateName);
             data.append("issuer", formData.issuer);
-            data.append("certificateType", formData.certificateType);
+            data.append("certificateType", credentialType);
             data.append("issueDate", formData.issueDate);
             data.append("expiryDate", formData.expiryDate);
             data.append("description", formData.description);
             data.append("certificate", file);
+            data.append("hasExpiry", expiry);
 
             const response = await uploadCertificate(data);
             alert(response.message);
             console.log(response.certificate);
             try {
                 const hash = response.hashBytes32;
-                const txHash = await createVerificationRequest(hash,0,selectedIssuerWallet,0);
+                const txHash = await createVerificationRequest(hash, credentialType.Certificate,requestTypes.AddCertificate, selectedIssuerWallet, hasExpiry);
                 console.log(txHash);
                 alert("Verification Request Created Successfully");
             }
@@ -158,29 +165,39 @@ const UploadCertificate = () => {
                         </label>
 
                         <select
-
                             name="certificateType"
-
                             value={formData.certificateType}
-
                             onChange={handleChange}
-
                             className="w-full border rounded-lg p-3"
-
+                            required
                         >
+                            <option value="">
+                                Select Credential Type
+                            </option>
 
-                            <option>Course</option>
+                            <option value="Certificate">
+                                Certificate
+                            </option>
 
-                            <option>Internship</option>
+                            <option value="Project">
+                                Project
+                            </option>
 
-                            <option>Workshop</option>
+                            <option value="Internship">
+                                Internship
+                            </option>
 
-                            <option>Hackathon</option>
+                            <option value="Hackathon">
+                                Hackathon
+                            </option>
 
-                            <option>Competition</option>
+                            <option value="ResearchPaper">
+                                Research Paper
+                            </option>
 
-                            <option>Professional</option>
-
+                            <option value="Patent">
+                                Patent
+                            </option>
                         </select>
 
                     </div>
@@ -212,29 +229,39 @@ const UploadCertificate = () => {
                         </div>
 
                         <div>
-
                             <label className="font-semibold">
-
-                                Expiry Date
-
+                                Does this credential expire?
                             </label>
 
-                            <input
-
-                                type="date"
-
-                                name="expiryDate"
-
-                                value={formData.expiryDate}
-
+                            <select
+                                name="hasExpiry"
+                                value={formData.hasExpiry}
                                 onChange={handleChange}
-
                                 className="w-full border rounded-lg p-3"
+                            >
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
 
-                            />
+                            {
+                                formData.hasExpiry === "yes" && (
+                                    <>
+                                        <label className="font-semibold mt-3 block">
+                                            Expiry Date
+                                        </label>
 
+                                        <input
+                                            type="date"
+                                            name="expiryDate"
+                                            value={formData.expiryDate}
+                                            onChange={handleChange}
+                                            className="w-full border rounded-lg p-3"
+                                            required
+                                        />
+                                    </>
+                                )
+                            }
                         </div>
-
                     </div>
 
                     <div>

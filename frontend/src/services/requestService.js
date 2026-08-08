@@ -1,11 +1,11 @@
 import { getRequestContract } from "../utils/requestContract";
 
-export const createVerificationRequest = async (certificateHash, credentialType, issuer, expiry) => {
+export const createVerificationRequest = async (certificateHash, credentialType,requestType, issuer, expiry) => {
     const contract = await getRequestContract();
     const tx = await contract.createRequest(
         certificateHash,
         credentialType,
-        0,
+        requestType,
         issuer,
         expiry
     );

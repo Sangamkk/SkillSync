@@ -2,8 +2,7 @@ import { ethers } from "ethers";
 
 import EmploymentManager from "../abhi/EmploymentManager.json";
 
-export const CONTRACT_ADDRESS =
-  import.meta.env.VITE_EMPLOYMENT_MANAGER_ADDRESS;
+export const CONTRACT_ADDRESS = import.meta.env.VITE_EMPLOYMENT_MANAGER_ADDRESS;
 
 export const getEmploymentContract = async () => {
   if (!window.ethereum) {
@@ -14,12 +13,8 @@ export const getEmploymentContract = async () => {
     method: "eth_requestAccounts",
   });
 
-  const provider = new ethers.BrowserProvider(
-    window.ethereum
-  );
-
+  const provider = new ethers.BrowserProvider( window.ethereum );
   const signer = await provider.getSigner();
-
   console.log(
     "Current Signer:",
     await signer.getAddress()

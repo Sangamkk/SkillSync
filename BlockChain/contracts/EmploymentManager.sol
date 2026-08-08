@@ -191,7 +191,7 @@ function endEmployment(uint256 offerId) external {
     emit EmploymentEnded(offerId);
 }
 
-//getters
+//getters phase2
 function getOrganisationOffers() external view returns (uint256[] memory) {
     return organisationOffers[msg.sender];
 }
