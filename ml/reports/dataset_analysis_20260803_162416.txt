@@ -1,0 +1,53 @@
+Certificate Dataset Analysis
+==============================
+Generated: 2026-08-03T10:54:16.713399+00:00
+
+Totals
+------
+Files on disk:   0
+Metadata rows:   3
+Genuine:         0
+Fake:            0
+
+Genuine
+-------
+  aws: 0
+  cisco: 0
+  coursera: 0
+  google: 0
+  ibm: 0
+  linkedin: 0
+  microsoft: 0
+  nptel: 0
+  others: 0
+  udemy: 0
+
+Fake
+----
+  edited_date: 0
+  edited_logo: 0
+  edited_name: 0
+  fake_signature: 0
+  others: 0
+  removed_qr: 0
+
+Formats on disk
+---------------
+  (none)
+
+Metadata breakdown
+------------------
+Platforms:
+  Coursera: 1
+  Google: 2
+Types:
+  fake: 1
+  genuine: 2
+
+Coverage gaps
+-------------
+On disk, missing from metadata: 0
+In metadata, missing on disk: 3
+  - coursera_0001.pdf
+  - fake_logo_0001.png
+  - google_0001.png
