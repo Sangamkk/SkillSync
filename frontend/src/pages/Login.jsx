@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { Link, useNavigate } from "react-router-dom";
+
 import { loginUser } from "../services/authService";
 import {
-  applicantExists
+    applicantExists
 } from "../services/blockchainService";
+import MeshBackground from "../components/common/MeshBackground";
 
 function Login() {
-    const { connectWallet } = useWallet();
+const { connectWallet } = useWallet();
 
+const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("skillsync-theme") !== "light";
+});
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -40,6 +45,7 @@ function Login() {
             alert("Wallet is not registered on blockchain");
             return;
         }
+
         const loginData = {
             ...formData,
             walletAddress,
@@ -73,56 +79,241 @@ function Login() {
     };
 
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-                <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-                    Welcome Back
+  return (
+    <div
+        className={`relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 transition-colors duration-500 ${
+            darkMode
+                ? "bg-[#070B14] text-white"
+                : "bg-[#F8FAFC] text-slate-900"
+        }`}
+    >
+
+        {/* Mesh Background */}
+        <MeshBackground darkMode={darkMode} />
+
+        {/* Theme Toggle */}
+        <button
+            type="button"
+            onClick={() => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                localStorage.setItem(
+                    "skillsync-theme",
+                    newMode ? "dark" : "light"
+                );
+            }}
+            className={`absolute right-6 top-6 z-50 flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-300 hover:scale-105 ${
+                darkMode
+                    ? "border-white/10 bg-white/5 hover:bg-white/10"
+                    : "border-slate-200 bg-white shadow-sm hover:bg-slate-50"
+            }`}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+            {darkMode ? "☀️" : "🌙"}
+        </button>
+
+
+        {/* Login Content */}
+        <div className="relative z-10 w-full max-w-md">
+
+            {/* Brand */}
+            <div className="mb-8 text-center">
+
+                <h1
+                    className={`text-3xl font-bold tracking-tight ${
+                        darkMode ? "text-white" : "text-slate-900"
+                    }`}
+                >
+                    Skill<span className="text-blue-500">Sync</span>
                 </h1>
 
-                <p className="text-center text-gray-500 mb-6">
+                <p
+                    className={`mt-2 text-sm ${
+                        darkMode ? "text-slate-400" : "text-slate-500"
+                    }`}
+                >
+                    Blockchain-powered credential verification
+                </p>
+
+            </div>
+
+
+            {/* Login Card */}
+            <div
+                className={`rounded-3xl border p-8 shadow-2xl backdrop-blur-2xl transition-colors duration-500 sm:p-10 ${
+                    darkMode
+                        ? "border-white/10 bg-white/[0.06] shadow-black/30"
+                        : "border-slate-200 bg-white/90 shadow-slate-200/70"
+                }`}
+            >
+
+                <h2
+                    className={`text-center text-3xl font-bold tracking-tight ${
+                        darkMode ? "text-white" : "text-slate-900"
+                    }`}
+                >
+                    Welcome Back
+                </h2>
+
+                <p
+                    className={`mt-2 text-center text-sm ${
+                        darkMode ? "text-slate-400" : "text-slate-500"
+                    }`}
+                >
                     Login to your SkillSync account
                 </p>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <input
-                        type="email"
-                        name="email"
-                        placeholder="Email Address"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
 
-                    <input
-                        type="password"
-                        name="password"
-                        placeholder="Password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    />
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
 
+                    {/* Email */}
+                    <div>
+
+                        <label
+                            className={`mb-2 block text-sm font-medium ${
+                                darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                            }`}
+                        >
+                            Email Address
+                        </label>
+
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
+                                darkMode
+                                    ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                            }`}
+                        />
+
+                    </div>
+
+
+                    {/* Password */}
+                    <div>
+
+                        <label
+                            className={`mb-2 block text-sm font-medium ${
+                                darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                            }`}
+                        >
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
+                                darkMode
+                                    ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                            }`}
+                        />
+
+                    </div>
+
+
+                    {/* Login Button */}
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30"
                     >
-                        Connect MetaMask & Login
+                        <span className="relative z-10">
+                            🦊 Connect MetaMask & Login
+                        </span>
                     </button>
 
-                    <p className="text-center text-sm text-gray-600">
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-3 py-1">
+
+                        <div
+                            className={`h-px flex-1 ${
+                                darkMode
+                                    ? "bg-white/10"
+                                    : "bg-slate-200"
+                            }`}
+                        />
+
+                        <span
+                            className={`text-xs ${
+                                darkMode
+                                    ? "text-slate-600"
+                                    : "text-slate-400"
+                            }`}
+                        >
+                            SECURE WEB3 LOGIN
+                        </span>
+
+                        <div
+                            className={`h-px flex-1 ${
+                                darkMode
+                                    ? "bg-white/10"
+                                    : "bg-slate-200"
+                            }`}
+                        />
+
+                    </div>
+
+
+                    {/* Register */}
+                    <p
+                        className={`text-center text-sm ${
+                            darkMode
+                                ? "text-slate-400"
+                                : "text-slate-500"
+                        }`}
+                    >
                         Don't have an account?{" "}
+
                         <Link
                             to="/register"
-                            className="text-blue-600 font-semibold hover:underline"
+                            className="font-semibold text-blue-500 transition hover:text-blue-400 hover:underline"
                         >
                             Register
                         </Link>
+
                     </p>
+
                 </form>
+
             </div>
+
+
+            {/* Security Indicators */}
+            <div
+                className={`mt-6 flex items-center justify-center gap-6 text-xs ${
+                    darkMode ? "text-slate-600" : "text-slate-500"
+                }`}
+            >
+
+                <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Wallet secured
+                </span>
+
+                <span className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    Blockchain verified
+                </span>
+
+            </div>
+
         </div>
-    );
+
+    </div>
+);
 }
 
 export default Login;
