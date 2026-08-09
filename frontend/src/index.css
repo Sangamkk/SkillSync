@@ -1,1 +1,238 @@
 @import "tailwindcss";
+/* =====================================================
+   SKILLSYNC LOGIN PAGE
+   PREMIUM LIGHT + DARK THEME
+   ===================================================== */
+
+.login-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.10), transparent 30%),
+    radial-gradient(circle at 85% 80%, rgba(124, 58, 237, 0.10), transparent 30%),
+    #f8fafc;
+
+  color: #0f172a;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+
+/* ---------- Card ---------- */
+
+.login-card {
+  width: 100%;
+  max-width: 460px;
+
+  border: 1px solid rgba(148, 163, 184, 0.22);
+
+  background: rgba(255, 255, 255, 0.82);
+
+  box-shadow:
+    0 25px 70px rgba(15, 23, 42, 0.12),
+    0 8px 25px rgba(15, 23, 42, 0.05);
+
+  backdrop-filter: blur(20px);
+
+  transition:
+    background 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+
+/* ---------- Brand ---------- */
+
+.login-title {
+  color: #0f172a;
+}
+
+.login-subtitle {
+  color: #64748b;
+}
+
+.login-heading {
+  color: #0f172a;
+}
+
+.login-description {
+  color: #64748b;
+}
+
+
+/* ---------- Inputs ---------- */
+
+.login-input {
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.login-input::placeholder {
+  color: #94a3b8;
+}
+
+.login-input:hover {
+  border-color: #93c5fd;
+}
+
+.login-input:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.10);
+}
+
+
+/* ---------- Button ---------- */
+
+.login-button {
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #7c3aed
+  );
+
+  box-shadow:
+    0 12px 30px rgba(37, 99, 235, 0.20);
+}
+
+.login-button:hover {
+  box-shadow:
+    0 16px 38px rgba(37, 99, 235, 0.30);
+}
+
+
+/* ---------- Divider ---------- */
+
+.login-divider {
+  background: #e2e8f0;
+}
+
+.login-divider-text {
+  color: #94a3b8;
+}
+
+
+/* ---------- Register ---------- */
+
+.login-register {
+  color: #64748b;
+}
+
+.login-link {
+  color: #2563eb;
+}
+
+.login-link:hover {
+  color: #1d4ed8;
+}
+
+
+/* ---------- Security ---------- */
+
+.login-security {
+  color: #64748b;
+}
+
+
+/* =====================================================
+   DARK THEME
+   ===================================================== */
+
+html[data-theme="dark"] .login-page {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.14), transparent 30%),
+    radial-gradient(circle at 85% 80%, rgba(124, 58, 237, 0.14), transparent 30%),
+    #070b14;
+
+  color: #ffffff;
+}
+
+
+html[data-theme="dark"] .login-card {
+  border-color: rgba(255, 255, 255, 0.10);
+
+  background: rgba(255, 255, 255, 0.055);
+
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.40),
+    0 0 40px rgba(37, 99, 235, 0.05);
+}
+
+
+html[data-theme="dark"] .login-title {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .login-subtitle {
+  color: #64748b;
+}
+
+html[data-theme="dark"] .login-heading {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .login-description {
+  color: #94a3b8;
+}
+
+
+/* ---------- Dark Inputs ---------- */
+
+html[data-theme="dark"] .login-input {
+  border-color: rgba(255, 255, 255, 0.10);
+
+  background: rgba(255, 255, 255, 0.055);
+
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .login-input::placeholder {
+  color: #475569;
+}
+
+html[data-theme="dark"] .login-input:hover {
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+html[data-theme="dark"] .login-input:focus {
+  border-color: rgba(59, 130, 246, 0.60);
+
+  background: rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.10);
+}
+
+
+/* ---------- Dark Divider ---------- */
+
+html[data-theme="dark"] .login-divider {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+html[data-theme="dark"] .login-divider-text {
+  color: #475569;
+}
+
+
+/* ---------- Dark Register ---------- */
+
+html[data-theme="dark"] .login-register {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .login-link {
+  color: #60a5fa;
+}
+
+html[data-theme="dark"] .login-link:hover {
+  color: #93c5fd;
+}
+
+
+/* ---------- Dark Security ---------- */
+
+html[data-theme="dark"] .login-security {
+  color: #475569;
+}
