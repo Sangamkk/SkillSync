@@ -1,0 +1,8 @@
+{
+  "sampled_certificates": 0,
+  "ocr_success_rate": 0.0,
+  "readable_text_count": 0,
+  "missing_text_count": 0,
+  "incorrect_text": "Manual review required; ground-truth text is not available in the dataset metadata.",
+  "observations": []
+}

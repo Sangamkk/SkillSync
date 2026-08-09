@@ -1,0 +1,55 @@
+{
+  "generated_at": "2026-08-03T10:54:16.713399+00:00",
+  "totals": {
+    "files_on_disk": 0,
+    "metadata_rows": 3,
+    "genuine": 0,
+    "fake": 0
+  },
+  "by_subfolder": {
+    "genuine": {
+      "aws": 0,
+      "cisco": 0,
+      "coursera": 0,
+      "google": 0,
+      "ibm": 0,
+      "linkedin": 0,
+      "microsoft": 0,
+      "nptel": 0,
+      "others": 0,
+      "udemy": 0
+    },
+    "fake": {
+      "edited_date": 0,
+      "edited_logo": 0,
+      "edited_name": 0,
+      "fake_signature": 0,
+      "others": 0,
+      "removed_qr": 0
+    }
+  },
+  "formats_on_disk": {},
+  "types_on_disk": {},
+  "metadata": {
+    "by_type": {
+      "genuine": 2,
+      "fake": 1
+    },
+    "by_format": {
+      "pdf": 1,
+      "image": 2
+    },
+    "by_platform": {
+      "Coursera": 1,
+      "Google": 2
+    }
+  },
+  "coverage": {
+    "on_disk_not_in_metadata": [],
+    "in_metadata_not_on_disk": [
+      "coursera_0001.pdf",
+      "fake_logo_0001.png",
+      "google_0001.png"
+    ]
+  }
+}
