@@ -32,51 +32,27 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Student Routes */}
-        <Route path="/student" element={<StudentDashboard />} />
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/certificate" element={<Certificate />} />
         <Route path="/student/jobs" element={<Jobs />} />
-        <Route
-          path="/student/offers"
-          element={<StudentOffers />}
-        />
+        <Route path="/student/offers" element={<StudentOffers />} />
 
         {/* Organisation Routes */}
-        <Route
-          path="/org/register"
-          element={<RegisterOrganisation />}
-        />
-
-        <Route
-          path="/organisation/create-job"
-          element={<CreateJob />}
-        />
-
-        <Route
-          path="/organisation/jobs"
-          element={<MyJobs />}
-        />
-
-        <Route
-          path="/organisation/jobs/:jobId/applications"
-          element={<Applicants />}
-        />
-
-
-
-        <Route
-  path="/organisation/employees"
-  element={<Employees />}
-/>
-        {/* Admin */}
-        <Route
-          path="/admin"
-          element={<AdminDashboard />}
-        />
-
-        <Route path="/org/register" element={<RegisterOrganisation />}/>
+        <Route path="/org/register" element={<RegisterOrganisation />} />
         <Route path="/org-login" element={<OrganisationLogin />}/>
         <Route path="/organisation" element={<OrganisationDashboard />}/>
-        <Route path="/admin" element={<AdminDashboard />}/>
+        <Route path="/organisation/create-job" element={<CreateJob />} />
+        <Route path="/organisation/jobs" element={<MyJobs />} />
+        <Route path="/organisation/jobs/:jobId/applications" element={<Applicants />} />
+        <Route  path="/organisation/employees"  element={<Employees />}/>
+
+        
+        {/* Admin */}
+        <Route path="/admin" element={<AdminDashboard />} />
+
+ 
+        
+
         
       </Routes>
     </BrowserRouter>

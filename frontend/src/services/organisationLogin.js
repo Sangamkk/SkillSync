@@ -16,6 +16,16 @@ export const organisationLogin = async () => {
         throw new Error("Organisation is inactive");
     }
 
+    localStorage.setItem(
+        "token",
+        response.data.token
+    );
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify(response.data.user)
+    );
+
     return {
         wallet: signer,
         organisation

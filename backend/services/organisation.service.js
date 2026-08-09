@@ -40,3 +40,50 @@ export const rejectApplicationService = async (id) => {
         }
     );
 };
+
+export const organisationLoginService = async (walletAddress) => {
+    const normalizedWallet = walletAddress.toLowerCase();
+
+    const organisation = await OrganisationApplication.findOne({
+            walletAddress: normalizedWallet,
+            status: "Approved"
+        });
+
+    if (!organisation) {
+        const error = new Error( "Organization is not verified" );
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const token = jwt.sign(
+        {
+            userId: organisation._id,
+            role: "organization",
+            walletAddress:
+                organisation.walletAddress
+        },
+
+        process.env.JWT_SECRET,
+
+        {
+            expiresIn:
+                process.env.JWT_EXPIRES_IN || "1d"
+        }
+    );
+
+    return {
+
+        token,
+
+        user: {
+            _id: organisation._id,
+            name: organisation.organisationName,
+            email: organisation.email,
+            role: "organization",
+            walletAddress:
+                organisation.walletAddress
+        }
+
+    };
+
+};

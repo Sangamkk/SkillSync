@@ -3,31 +3,30 @@ import { organisationLogin } from "../services/organisationLogin";
 import MeshBackground from "../components/common/MeshBackground";
 
 const OrganisationLogin = () => {
-
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
     const handleLogin = async () => {
-
         try {
-
             const result = await organisationLogin();
 
             alert("Login Successful");
-
             console.log(result);
 
+            window.location.href = "/organisation";
         } catch (error) {
+            console.error("Organisation Login Error:", error);
 
-            alert(error.message);
-
+            alert(
+                error.response?.data?.message ||
+                error.message ||
+                "Login Failed"
+            );
         }
-
     };
 
     return (
-
         <div
             className={`relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12 transition-colors duration-500 ${
                 darkMode
@@ -35,11 +34,8 @@ const OrganisationLogin = () => {
                     : "bg-[#F6F8FC] text-slate-900"
             }`}
         >
-
             {/* ================= MESH BACKGROUND ================= */}
-
             <MeshBackground darkMode={darkMode} />
-
 
             {/* ================= BACKGROUND GLOW ================= */}
 
@@ -59,11 +55,9 @@ const OrganisationLogin = () => {
                 }`}
             />
 
-
             {/* ================= MAIN CONTENT ================= */}
 
             <div className="relative z-10 w-full max-w-md">
-
 
                 {/* ================= BRAND ================= */}
 
@@ -91,7 +85,6 @@ const OrganisationLogin = () => {
 
                 </div>
 
-
                 {/* ================= LOGIN CARD ================= */}
 
                 <div
@@ -101,7 +94,6 @@ const OrganisationLogin = () => {
                             : "border-slate-200 bg-white/85 shadow-slate-300/30"
                     }`}
                 >
-
 
                     {/* ================= HEADING ================= */}
 
@@ -139,7 +131,6 @@ const OrganisationLogin = () => {
                         </p>
 
                     </div>
-
 
                     {/* ================= WALLET SECTION ================= */}
 
@@ -192,7 +183,6 @@ const OrganisationLogin = () => {
 
                     </div>
 
-
                     {/* ================= LOGIN BUTTON ================= */}
 
                     <button
@@ -201,7 +191,6 @@ const OrganisationLogin = () => {
                     >
                         🦊 Login with MetaMask
                     </button>
-
 
                     {/* ================= SECURITY INFO ================= */}
 
@@ -214,26 +203,18 @@ const OrganisationLogin = () => {
                     >
 
                         <span className="flex items-center gap-1.5">
-
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-
                             Wallet secured
-
                         </span>
 
-
                         <span className="flex items-center gap-1.5">
-
                             <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-
                             Blockchain verified
-
                         </span>
 
                     </div>
 
                 </div>
-
 
                 {/* ================= FOOTER ================= */}
 
@@ -250,7 +231,6 @@ const OrganisationLogin = () => {
             </div>
 
         </div>
-
     );
 };
 

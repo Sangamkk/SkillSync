@@ -43,6 +43,7 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // 1. Validate basic fields
         if (
             !formData.name ||
             !formData.email ||
@@ -52,61 +53,89 @@ function Register() {
             return;
         }
 
+        // 2. Validate student details
         if (!formData.usn || !formData.college) {
             alert("Please fill all student details");
             return;
         }
 
-        const walletAddress = await connectWallet();
-
-        if (!walletAddress) return;
-
         try {
-            await createApplicant();
+            // 3. Connect MetaMask wallet
+            const walletAddress = await connectWallet();
 
+            if (!walletAddress) {
+                alert("Please connect your MetaMask wallet");
+                return;
+            }
+
+            console.log("Connected wallet:", walletAddress);
+
+            // 4. Prepare registration data
             const registerData = {
                 ...formData,
                 walletAddress,
             };
 
-            console.log(registerData);
+            console.log(
+                "Data being sent to backend:",
+                registerData
+            );
 
+            // 5. Register user in backend
             const response = await registerUser(registerData);
 
+            console.log("Backend response:", response);
+
+            // 6. Store authentication data
             localStorage.setItem("token", response.token);
+
             localStorage.setItem(
                 "user",
                 JSON.stringify(response.user)
             );
 
-            alert(response.message);
+            // 7. Register student/applicant on blockchain
+            if (response.user.role === "STUDENT") {
+                console.log(
+                    "Registering applicant on blockchain..."
+                );
 
+                const txHash = await createApplicant();
+
+                console.log(
+                    "Applicant blockchain transaction:",
+                    txHash
+                );
+            }
+
+            // 8. Navigate to student dashboard
             if (response.user.role === "STUDENT") {
                 navigate("/student/dashboard");
             }
 
-            if (response.user.role === "ORGANIZATION") {
-                navigate("/organization/dashboard");
-            }
+            alert(response.message || "Registration successful");
 
-            if (response.user.role === "COMPANY") {
-                navigate("/company/dashboard");
-            }
         } catch (error) {
+            console.error(
+                "Registration Error:",
+                error
+            );
+
             alert(
                 error.response?.data?.message ||
+                error.message ||
                 "Registration Failed"
             );
         }
     };
 
+
     return (
         <div
-            className={`relative min-h-screen overflow-hidden transition-colors duration-500 ${
-                darkMode
-                    ? "bg-[#070B14] text-white"
-                    : "bg-[#f4f7fb] text-slate-900"
-            }`}
+            className={`relative min-h-screen overflow-hidden transition-colors duration-500 ${darkMode
+                ? "bg-[#070B14] text-white"
+                : "bg-[#f4f7fb] text-slate-900"
+                }`}
         >
             {/* Interactive Mesh */}
             <MeshBackground darkMode={darkMode} />
@@ -114,11 +143,10 @@ function Register() {
             {/* Theme Toggle */}
             <button
                 onClick={handleThemeChange}
-                className={`fixed right-6 top-6 z-30 flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition-all duration-300 ${
-                    darkMode
-                        ? "border-white/10 bg-white/[0.06] text-white hover:bg-white/10"
-                        : "border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100"
-                }`}
+                className={`fixed right-6 top-6 z-30 flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition-all duration-300 ${darkMode
+                    ? "border-white/10 bg-white/[0.06] text-white hover:bg-white/10"
+                    : "border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-100"
+                    }`}
                 aria-label="Toggle theme"
             >
                 {darkMode ? "☀️" : "🌙"}
@@ -133,11 +161,10 @@ function Register() {
                     <div className="hidden lg:block">
 
                         <p
-                            className={`mb-5 text-sm font-semibold uppercase tracking-[0.22em] ${
-                                darkMode
-                                    ? "text-blue-400"
-                                    : "text-blue-600"
-                            }`}
+                            className={`mb-5 text-sm font-semibold uppercase tracking-[0.22em] ${darkMode
+                                ? "text-blue-400"
+                                : "text-blue-600"
+                                }`}
                         >
                             Build your digital identity
                         </p>
@@ -152,11 +179,10 @@ function Register() {
                         </h1>
 
                         <p
-                            className={`mt-7 max-w-xl text-lg leading-8 ${
-                                darkMode
-                                    ? "text-slate-400"
-                                    : "text-slate-600"
-                            }`}
+                            className={`mt-7 max-w-xl text-lg leading-8 ${darkMode
+                                ? "text-slate-400"
+                                : "text-slate-600"
+                                }`}
                         >
                             Create a trusted professional identity
                             where certificates, skills and projects
@@ -173,11 +199,10 @@ function Register() {
                                 </span>
 
                                 <span
-                                    className={`text-sm ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-600"
-                                    }`}
+                                    className={`text-sm ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-600"
+                                        }`}
                                 >
                                     Blockchain verified
                                 </span>
@@ -189,11 +214,10 @@ function Register() {
                                 </span>
 
                                 <span
-                                    className={`text-sm ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-600"
-                                    }`}
+                                    className={`text-sm ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-600"
+                                        }`}
                                 >
                                     Secure identity
                                 </span>
@@ -205,11 +229,10 @@ function Register() {
                                 </span>
 
                                 <span
-                                    className={`text-sm ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-600"
-                                    }`}
+                                    className={`text-sm ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-600"
+                                        }`}
                                 >
                                     Wallet connected
                                 </span>
@@ -223,42 +246,38 @@ function Register() {
                     <div className="w-full lg:ml-auto lg:max-w-xl">
 
                         <div
-                            className={`rounded-3xl border p-7 shadow-2xl backdrop-blur-2xl transition-colors duration-500 sm:p-9 ${
-                                darkMode
-                                    ? "border-white/10 bg-white/[0.06] shadow-black/30"
-                                    : "border-slate-200/80 bg-white/80 shadow-slate-300/40"
-                            }`}
+                            className={`rounded-3xl border p-7 shadow-2xl backdrop-blur-2xl transition-colors duration-500 sm:p-9 ${darkMode
+                                ? "border-white/10 bg-white/[0.06] shadow-black/30"
+                                : "border-slate-200/80 bg-white/80 shadow-slate-300/40"
+                                }`}
                         >
 
                             {/* Form Header */}
                             <div className="mb-8">
 
                                 <p
-                                    className={`text-sm font-semibold uppercase tracking-[0.18em] ${
-                                        darkMode
-                                            ? "text-blue-400"
-                                            : "text-blue-600"
-                                    }`}
+                                    className={`text-sm font-semibold uppercase tracking-[0.18em] ${darkMode
+                                        ? "text-blue-400"
+                                        : "text-blue-600"
+                                        }`}
                                 >
                                     Create your identity
                                 </p>
 
                                 <h2
-                                    className={`mt-2 text-3xl font-bold tracking-tight ${
-                                        darkMode
-                                            ? "text-white"
-                                            : "text-slate-900"
-                                    }`}
+                                    className={`mt-2 text-3xl font-bold tracking-tight ${darkMode
+                                        ? "text-white"
+                                        : "text-slate-900"
+                                        }`}
                                 >
                                     Join SkillSync
                                 </h2>
 
                                 <p
-                                    className={`mt-2 text-sm ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-500"
-                                    }`}
+                                    className={`mt-2 text-sm ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-500"
+                                        }`}
                                 >
                                     Build your verified digital
                                     identity with SkillSync.
@@ -276,11 +295,10 @@ function Register() {
                                 <div>
 
                                     <label
-                                        className={`mb-2 block text-sm font-medium ${
-                                            darkMode
-                                                ? "text-slate-300"
-                                                : "text-slate-700"
-                                        }`}
+                                        className={`mb-2 block text-sm font-medium ${darkMode
+                                            ? "text-slate-300"
+                                            : "text-slate-700"
+                                            }`}
                                     >
                                         Full Name
                                     </label>
@@ -291,11 +309,10 @@ function Register() {
                                         placeholder="Enter your full name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
+                                            ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                            : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                            }`}
                                     />
 
                                 </div>
@@ -304,11 +321,10 @@ function Register() {
                                 <div>
 
                                     <label
-                                        className={`mb-2 block text-sm font-medium ${
-                                            darkMode
-                                                ? "text-slate-300"
-                                                : "text-slate-700"
-                                        }`}
+                                        className={`mb-2 block text-sm font-medium ${darkMode
+                                            ? "text-slate-300"
+                                            : "text-slate-700"
+                                            }`}
                                     >
                                         Email Address
                                     </label>
@@ -319,11 +335,10 @@ function Register() {
                                         placeholder="Enter your email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
+                                            ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                            : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                            }`}
                                     />
 
                                 </div>
@@ -332,11 +347,10 @@ function Register() {
                                 <div>
 
                                     <label
-                                        className={`mb-2 block text-sm font-medium ${
-                                            darkMode
-                                                ? "text-slate-300"
-                                                : "text-slate-700"
-                                        }`}
+                                        className={`mb-2 block text-sm font-medium ${darkMode
+                                            ? "text-slate-300"
+                                            : "text-slate-700"
+                                            }`}
                                     >
                                         Password
                                     </label>
@@ -347,11 +361,10 @@ function Register() {
                                         placeholder="Create a password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
+                                            ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                            : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                            }`}
                                     />
 
                                 </div>
@@ -360,11 +373,10 @@ function Register() {
                                 <div>
 
                                     <label
-                                        className={`mb-2 block text-sm font-medium ${
-                                            darkMode
-                                                ? "text-slate-300"
-                                                : "text-slate-700"
-                                        }`}
+                                        className={`mb-2 block text-sm font-medium ${darkMode
+                                            ? "text-slate-300"
+                                            : "text-slate-700"
+                                            }`}
                                     >
                                         Account Type
                                     </label>
@@ -373,11 +385,10 @@ function Register() {
                                         name="role"
                                         value={formData.role}
                                         disabled
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none ${
-                                            darkMode
-                                                ? "border-white/10 bg-[#111827] text-white"
-                                                : "border-slate-200 bg-white text-slate-900"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none ${darkMode
+                                            ? "border-white/10 bg-[#111827] text-white"
+                                            : "border-slate-200 bg-white text-slate-900"
+                                            }`}
                                     >
                                         <option value="STUDENT">
                                             Student
@@ -388,21 +399,19 @@ function Register() {
 
                                 {/* Student Details */}
                                 <div
-                                    className={`space-y-5 rounded-2xl border p-4 ${
-                                        darkMode
-                                            ? "border-blue-500/10 bg-blue-500/[0.03]"
-                                            : "border-blue-200 bg-blue-50/60"
-                                    }`}
+                                    className={`space-y-5 rounded-2xl border p-4 ${darkMode
+                                        ? "border-blue-500/10 bg-blue-500/[0.03]"
+                                        : "border-blue-200 bg-blue-50/60"
+                                        }`}
                                 >
 
                                     <div className="flex items-center gap-3">
 
                                         <div
-                                            className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                                                darkMode
-                                                    ? "bg-blue-500/10"
-                                                    : "bg-blue-100"
-                                            }`}
+                                            className={`flex h-9 w-9 items-center justify-center rounded-lg ${darkMode
+                                                ? "bg-blue-500/10"
+                                                : "bg-blue-100"
+                                                }`}
                                         >
                                             🎓
                                         </div>
@@ -410,21 +419,19 @@ function Register() {
                                         <div>
 
                                             <p
-                                                className={`text-sm font-semibold ${
-                                                    darkMode
-                                                        ? "text-white"
-                                                        : "text-slate-900"
-                                                }`}
+                                                className={`text-sm font-semibold ${darkMode
+                                                    ? "text-white"
+                                                    : "text-slate-900"
+                                                    }`}
                                             >
                                                 Student Details
                                             </p>
 
                                             <p
-                                                className={`text-xs ${
-                                                    darkMode
-                                                        ? "text-slate-500"
-                                                        : "text-slate-500"
-                                                }`}
+                                                className={`text-xs ${darkMode
+                                                    ? "text-slate-500"
+                                                    : "text-slate-500"
+                                                    }`}
                                             >
                                                 Required for student
                                                 verification
@@ -441,11 +448,10 @@ function Register() {
                                         placeholder="USN"
                                         value={formData.usn}
                                         onChange={handleChange}
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
+                                            ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                            : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                            }`}
                                     />
 
                                     {/* College */}
@@ -455,11 +461,10 @@ function Register() {
                                         placeholder="College Name"
                                         value={formData.college}
                                         onChange={handleChange}
-                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                        }`}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
+                                            ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
+                                            : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                            }`}
                                     />
 
                                 </div>
@@ -476,11 +481,10 @@ function Register() {
 
                                 {/* Security */}
                                 <div
-                                    className={`flex items-center justify-center gap-5 pt-1 text-xs ${
-                                        darkMode
-                                            ? "text-slate-600"
-                                            : "text-slate-500"
-                                    }`}
+                                    className={`flex items-center justify-center gap-5 pt-1 text-xs ${darkMode
+                                        ? "text-slate-600"
+                                        : "text-slate-500"
+                                        }`}
                                 >
 
                                     <span className="flex items-center gap-1.5">
@@ -497,11 +501,10 @@ function Register() {
 
                                 {/* Login */}
                                 <p
-                                    className={`pt-2 text-center text-sm ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-500"
-                                    }`}
+                                    className={`pt-2 text-center text-sm ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-500"
+                                        }`}
                                 >
                                     Already have an account?{" "}
 

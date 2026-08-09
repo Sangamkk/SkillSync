@@ -6,45 +6,25 @@ import MeshBackground from "../../components/common/MeshBackground";
 const Dashboard = () => {
 
     const [user, setUser] = useState(null);
-
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
-
     const navigate = useNavigate();
-
-
     useEffect(() => {
         fetchProfile();
     }, []);
-
-
     const fetchProfile = async () => {
-
         try {
-
             const user = JSON.parse(
                 localStorage.getItem("user")
             );
-
             console.log(user);
-
-            const walletAddress =
-                JSON.parse(
-                    localStorage.getItem("user")
-                ).walletAddress;
-
-            const profile =
-                await getProfile(walletAddress);
-
+            const walletAddress = JSON.parse(localStorage.getItem("user")).walletAddress;
+            const profile = await getProfile(walletAddress);
             setUser(profile);
-
         } catch (error) {
-
             console.error(error);
-
         }
-
     };
 
 

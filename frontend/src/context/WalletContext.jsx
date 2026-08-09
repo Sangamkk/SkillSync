@@ -24,7 +24,7 @@ export const WalletProvider = ({ children }) => {
         const accounts = await window.ethereum.request({
             method: "eth_accounts"
         });
-
+        console.log(accounts);
         setWalletAddress(accounts[0]);
 
         return accounts[0];

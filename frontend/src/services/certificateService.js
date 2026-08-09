@@ -1,17 +1,16 @@
-import axios from "axios";
-
+import api from "./api";
 
 export const uploadCertificate = async (certificateData) => {
-    const response = await axios.post("http://localhost:5000/api/certificate/upload",certificateData,{headers:{"Content-Type":"multipart/form-data"}});
+    const response = await api.post("certificate/upload",certificateData,{headers:{"Content-Type":"multipart/form-data"}});
     return response.data;
 };
 
 export const getCertificates = async (studentId) => {
-    const response = await axios.get(`http://localhost:5000/api/certificate/${studentId}`);
+    const response = await api.get(`certificate/${studentId}`);
     return response.data;
 };
 
 export const getCertificateByHash = async (hash) => {
-    const response = await axios.get(`http://localhost:5000/api/certificate/hash/${hash}`);
+    const response = await api.get(`certificate/hash/${hash}`);
     return response.data.certificate;
 };

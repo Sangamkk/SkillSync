@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
-import generateToken from "../utils/generateToken.js";
+import { generateToken } from "../utils/jwt.js";
 
 export const register = async (userData) => {
   const {
@@ -15,34 +15,39 @@ export const register = async (userData) => {
     companyName,
   } = userData;
 
-  const existingEmail = await User.findOne({ email });
-  
-  if (existingEmail) {
-    throw new Error("Email already exists");
+  try {
+    const existingEmail = await User.findOne({ email });
+
+    if (existingEmail) {
+      throw new Error("Email already exists");
+    }
+
+    const existingWallet = await User.findOne({ walletAddress });
+
+    if (existingWallet) {
+      throw new Error("Wallet already registered");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      walletAddress,
+      usn,
+      college,
+      organizationName,
+      companyName,
+    });
+
+    return { user };
+  } catch (error) {
+    console.error( "Registration service error:", error );
+    throw error;
   }
 
-  const existingWallet = await User.findOne({ walletAddress });
-
-  if (existingWallet) {
-    throw new Error("Wallet already registered");
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-    role,
-    walletAddress,
-    usn,
-    college,
-    organizationName,
-    companyName,
-  });
-  const tokene=generateToken(user._id);
-
-  return {token,user};
 };
 
 
@@ -69,8 +74,8 @@ export const login = async (loginData) => {
     throw new Error("Wallet does not match");
   }
 
-  const token = generateToken(user._id);
-
+  const token = generateToken(user);
+  console.log(user,"-->from AuthLogin Service.")
   return {
     message: "Login Successful",
     token,

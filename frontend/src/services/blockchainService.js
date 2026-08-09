@@ -15,7 +15,7 @@ export const createApplicant = async () => {
 
 export const applicantExists = async (walletAddress) => {
   const contract = await getContract();
-
+  console.log(contract)
   return await contract.applicantExists(walletAddress);
 };
 

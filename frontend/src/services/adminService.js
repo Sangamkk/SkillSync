@@ -1,41 +1,47 @@
-import axios from "axios";
-
-const API = "http://localhost:5000/api/organisation";
+import api from "./api";
 
 export const getPendingApplications = async () => {
 
-    const response = await axios.get(
-        `${API}/pending`
+    const response = await api.get(
+        "/organisation/pending"
     );
 
     return response.data.applications;
-
 };
 
-export const approveOrganisation = async(id,txHash)=>{
-    const response = await axios.put("http://localhost:5000/api/organisation/approve",{id,txHash});
+
+export const approveOrganisation = async (id, txHash) => {
+
+    const response = await api.put(
+        "/organisation/approve",
+        {
+            id,
+            txHash
+        }
+    );
+
     return response.data;
 };
 
+
 export const rejectOrganisation = async (id) => {
 
-    const response = await axios.put(
-        "http://localhost:5000/api/organisation/reject",
+    const response = await api.put(
+        "/organisation/reject",
         {
             id
         }
     );
 
     return response.data;
-
 };
+
 
 export const getVerifiedOrganisations = async () => {
 
-    const response = await axios.get(
-        "http://localhost:5000/api/organisation/verified"
+    const response = await api.get(
+        "/organisation/verified"
     );
 
     return response.data.organisations;
-
 };

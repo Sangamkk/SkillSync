@@ -1,32 +1,12 @@
-import axios from "axios";
-
-const API =
-"http://localhost:5000/api/organisation";
+import api from "./api";
 
 export const applyOrganisation = async (data) => {
-
-    const response = await axios.post(
-
-        `${API}/apply`,
-
-        data
-
-    );
-
+    const response = await api.post( "organisation/apply", data );
     return response.data;
-
 };
 
-export const getPendingApplications =
-async () => {
-
-    const response = await axios.get(
-
-        `${API}/pending`
-
-    );
-
+export const getPendingApplications = async () => {
+    const response = await axios.get( `${API}/pending` );
     return response.data;
-
 };
 

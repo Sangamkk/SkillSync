@@ -18,6 +18,19 @@ export const getContract = async () => {
     ApplicantManager.abi,
     signer
   );
+  console.log(
+    "Organisation Registry Address:",
+    import.meta.env.VITE_ORGANISATION_REGISTRY_ADDRESS
+);
 
+console.log(
+    "Connected Wallet:",
+    await signer.getAddress()
+);
+
+console.log(
+    "Contract Address:",
+    contract.target
+);
   return contract;
 };

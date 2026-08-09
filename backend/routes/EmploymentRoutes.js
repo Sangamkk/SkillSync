@@ -13,71 +13,141 @@ import {
   getOrganisationEmployees,
   terminateEmployment,
 } from "../controllers/EmploymentController.js";
+import { authenticate } from "../middleware/authMiddleware.js";
+import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
-
 // =====================================================
 // Organisation Routes
 // =====================================================
 
-// TODO: Organisation Auth Middleware Required
-router.post("/jobs", createJob);
+// Create a job
+router.post(
+    "/jobs",
+    authenticate,
+    authorizeRoles("organization"),
+    createJob
+);
 
-// TODO: Organisation Auth Middleware Required
-router.get("/jobs/my", getMyJobs);
 
-// TODO: Organisation Auth Middleware Required
-// TODO: Verify job belongs to req.user.id
-router.delete("/jobs/:jobId", deleteJob);
+// Get jobs created by the logged-in organisation
+router.get(
+    "/jobs/my",
+    authenticate,
+    authorizeRoles("organization"),
+    getMyJobs
+);
+
+
+// Delete a job
+// IMPORTANT: controller/service should verify that
+// this job belongs to req.user.userId
+router.delete(
+    "/jobs/:jobId",
+    authenticate,
+    authorizeRoles("organization"),
+    deleteJob
+);
+
 
 // =====================================================
 // Student Routes
 // =====================================================
 
-// Public (or Student Auth depending on requirements)
-router.get("/jobs", getAllJobs);
+// View all available jobs
+router.get(
+    "/jobs",
+    authenticate,
+    authorizeRoles("student"),
+    getAllJobs
+);
 
-// TODO: Student Auth Middleware Required
-router.post("/jobs/:jobId/apply", applyToJob);
+
+// Apply to a job
+router.post(
+    "/jobs/:jobId/apply",
+    authenticate,
+    authorizeRoles("student"),
+    applyToJob
+);
+
 
 // =====================================================
 // Organisation Routes
 // =====================================================
 
-// TODO: Organisation Auth Middleware Required
-// TODO: Verify job belongs to req.user.id
-router.get("/jobs/:jobId/applications", getApplicants);
-
-// TODO: Organisation Auth Middleware Required
-// TODO: Verify application belongs to organisation
-router.post(
-  "/applications/:applicationId/offer",
-  createEmploymentOffer
+// View applications for an organisation's job
+// IMPORTANT: verify the job belongs to req.user.userId
+router.get(
+    "/jobs/:jobId/applications",
+    authenticate,
+    authorizeRoles("organization"),
+    getApplicants
 );
 
-// TODO: Organisation Auth Middleware Required
-router.get("/employees", getOrganisationEmployees);
 
-// TODO: Organisation Auth Middleware Required
-// TODO: Verify employment belongs to organisation
+// Create employment offer
+// IMPORTANT: verify the application belongs to
+// the logged-in organisation
 router.post(
-  "/employees/:offerId/terminate",
-  terminateEmployment
+    "/applications/:applicationId/offer",
+    authenticate,
+    authorizeRoles("organization"),
+    createEmploymentOffer
 );
+
+
+// View organisation employees
+router.get(
+    "/employees",
+    authenticate,
+    authorizeRoles("organization"),
+    getOrganisationEmployees
+);
+
+
+// Terminate employment
+// IMPORTANT: verify the employment belongs to
+// the logged-in organisation
+router.post(
+    "/employees/:offerId/terminate",
+    authenticate,
+    authorizeRoles("organization"),
+    terminateEmployment
+);
+
 
 // =====================================================
 // Student Routes
 // =====================================================
 
-// TODO: Student Auth Middleware Required
-router.get("/offers", getMyOffers);
+// View offers received by the logged-in student
+router.get(
+    "/offers",
+    authenticate,
+    authorizeRoles("student"),
+    getMyOffers
+);
 
-// TODO: Student Auth Middleware Required
-// TODO: Verify offer belongs to student
-router.post("/offers/:offerId/accept", acceptOffer);
 
-// TODO: Student Auth Middleware Required
-// TODO: Verify offer belongs to student
-router.post("/offers/:offerId/reject", rejectOffer);
+// Accept employment offer
+// IMPORTANT: verify offer belongs to req.user.userId
+router.post(
+    "/offers/:offerId/accept",
+    authenticate,
+    authorizeRoles("student"),
+    acceptOffer
+);
+
+
+// Reject employment offer
+// IMPORTANT: verify offer belongs to req.user.userId
+router.post(
+    "/offers/:offerId/reject",
+    authenticate,
+    authorizeRoles("student"),
+    rejectOffer
+);
+
 
 export default router;
