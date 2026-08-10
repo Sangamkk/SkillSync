@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { organisationLogin } from "../services/organisationLogin";
 import MeshBackground from "../components/common/MeshBackground";
+import { useWallet } from "../context/WalletContext";
 
 const OrganisationLogin = () => {
+    const { connectWallet } = useWallet();
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
     const handleLogin = async () => {
         try {
-            const result = await organisationLogin();
+            
+            const walletAddress = await connectWallet();
+
+            if (!walletAddress) {
+                return;
+            } 
+            const result = await organisationLogin(walletAddress);
+            
 
             alert("Login Successful");
             console.log(result);
@@ -19,7 +28,7 @@ const OrganisationLogin = () => {
             console.error("Organisation Login Error:", error);
 
             alert(
-                error.response?.data?.message ||
+                error.result?.data?.message ||
                 error.message ||
                 "Login Failed"
             );
@@ -28,11 +37,10 @@ const OrganisationLogin = () => {
 
     return (
         <div
-            className={`relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12 transition-colors duration-500 ${
-                darkMode
+            className={`relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-12 transition-colors duration-500 ${darkMode
                     ? "bg-[#070B14] text-white"
                     : "bg-[#F6F8FC] text-slate-900"
-            }`}
+                }`}
         >
             {/* ================= MESH BACKGROUND ================= */}
             <MeshBackground darkMode={darkMode} />
@@ -40,19 +48,17 @@ const OrganisationLogin = () => {
             {/* ================= BACKGROUND GLOW ================= */}
 
             <div
-                className={`pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full blur-[120px] ${
-                    darkMode
+                className={`pointer-events-none absolute -left-40 -top-40 h-96 w-96 rounded-full blur-[120px] ${darkMode
                         ? "bg-blue-600/20"
                         : "bg-blue-500/10"
-                }`}
+                    }`}
             />
 
             <div
-                className={`pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full blur-[120px] ${
-                    darkMode
+                className={`pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full blur-[120px] ${darkMode
                         ? "bg-violet-600/20"
                         : "bg-violet-500/10"
-                }`}
+                    }`}
             />
 
             {/* ================= MAIN CONTENT ================= */}
@@ -64,21 +70,19 @@ const OrganisationLogin = () => {
                 <div className="mb-8 text-center">
 
                     <h1
-                        className={`text-3xl font-bold tracking-tight ${
-                            darkMode
+                        className={`text-3xl font-bold tracking-tight ${darkMode
                                 ? "text-white"
                                 : "text-slate-900"
-                        }`}
+                            }`}
                     >
                         Skill<span className="text-blue-500">Sync</span>
                     </h1>
 
                     <p
-                        className={`mt-2 text-sm ${
-                            darkMode
+                        className={`mt-2 text-sm ${darkMode
                                 ? "text-slate-500"
                                 : "text-slate-500"
-                        }`}
+                            }`}
                     >
                         Blockchain-powered credential verification
                     </p>
@@ -88,11 +92,10 @@ const OrganisationLogin = () => {
                 {/* ================= LOGIN CARD ================= */}
 
                 <div
-                    className={`rounded-3xl border p-8 shadow-2xl backdrop-blur-2xl sm:p-10 ${
-                        darkMode
+                    className={`rounded-3xl border p-8 shadow-2xl backdrop-blur-2xl sm:p-10 ${darkMode
                             ? "border-white/10 bg-white/[0.06] shadow-black/30"
                             : "border-slate-200 bg-white/85 shadow-slate-300/30"
-                    }`}
+                        }`}
                 >
 
                     {/* ================= HEADING ================= */}
@@ -100,31 +103,28 @@ const OrganisationLogin = () => {
                     <div className="text-center">
 
                         <p
-                            className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-                                darkMode
+                            className={`text-xs font-semibold uppercase tracking-[0.2em] ${darkMode
                                     ? "text-violet-400"
                                     : "text-violet-600"
-                            }`}
+                                }`}
                         >
                             Organisation Portal
                         </p>
 
                         <h2
-                            className={`mt-3 text-3xl font-bold ${
-                                darkMode
+                            className={`mt-3 text-3xl font-bold ${darkMode
                                     ? "text-white"
                                     : "text-slate-900"
-                            }`}
+                                }`}
                         >
                             Welcome Back
                         </h2>
 
                         <p
-                            className={`mt-2 text-sm leading-6 ${
-                                darkMode
+                            className={`mt-2 text-sm leading-6 ${darkMode
                                     ? "text-slate-400"
                                     : "text-slate-500"
-                            }`}
+                                }`}
                         >
                             Connect your organisation wallet to
                             access SkillSync.
@@ -135,21 +135,19 @@ const OrganisationLogin = () => {
                     {/* ================= WALLET SECTION ================= */}
 
                     <div
-                        className={`mt-8 rounded-2xl border p-5 ${
-                            darkMode
+                        className={`mt-8 rounded-2xl border p-5 ${darkMode
                                 ? "border-violet-500/20 bg-violet-500/[0.05]"
                                 : "border-violet-200 bg-violet-50/60"
-                        }`}
+                            }`}
                     >
 
                         <div className="flex items-start gap-4">
 
                             <div
-                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${
-                                    darkMode
+                                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${darkMode
                                         ? "bg-orange-500/10"
                                         : "bg-orange-100"
-                                }`}
+                                    }`}
                             >
                                 🦊
                             </div>
@@ -157,21 +155,19 @@ const OrganisationLogin = () => {
                             <div>
 
                                 <h3
-                                    className={`font-semibold ${
-                                        darkMode
+                                    className={`font-semibold ${darkMode
                                             ? "text-white"
                                             : "text-slate-900"
-                                    }`}
+                                        }`}
                                 >
                                     MetaMask Wallet
                                 </h3>
 
                                 <p
-                                    className={`mt-1 text-sm leading-5 ${
-                                        darkMode
+                                    className={`mt-1 text-sm leading-5 ${darkMode
                                             ? "text-slate-400"
                                             : "text-slate-500"
-                                    }`}
+                                        }`}
                                 >
                                     Use your registered organisation
                                     wallet to securely sign in.
@@ -195,11 +191,10 @@ const OrganisationLogin = () => {
                     {/* ================= SECURITY INFO ================= */}
 
                     <div
-                        className={`mt-6 flex items-center justify-center gap-5 text-xs ${
-                            darkMode
+                        className={`mt-6 flex items-center justify-center gap-5 text-xs ${darkMode
                                 ? "text-slate-500"
                                 : "text-slate-500"
-                        }`}
+                            }`}
                     >
 
                         <span className="flex items-center gap-1.5">
@@ -219,11 +214,10 @@ const OrganisationLogin = () => {
                 {/* ================= FOOTER ================= */}
 
                 <p
-                    className={`mt-6 text-center text-xs ${
-                        darkMode
+                    className={`mt-6 text-center text-xs ${darkMode
                             ? "text-slate-600"
                             : "text-slate-400"
-                    }`}
+                        }`}
                 >
                     SkillSync Organisation Network
                 </p>

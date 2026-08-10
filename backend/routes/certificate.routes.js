@@ -16,6 +16,6 @@ router.post("/upload",upload.single("certificate"),authenticate,authorizeRoles("
 
 router.get("/:studentId",authenticate,authorizeRoles("STUDENT"),getStudentCertificates);
 
-router.get("/hash/:hash",authenticate,authorizeRoles("STUDENT"),getCertificateByHash);
+router.get("/hash/:hash",authenticate,authorizeRoles("ORGANISATION"),getCertificateByHash);
 
 export default router;

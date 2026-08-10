@@ -25,7 +25,7 @@ const router = express.Router();
 router.post(
     "/jobs",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     createJob
 );
 
@@ -34,7 +34,7 @@ router.post(
 router.get(
     "/jobs/my",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     getMyJobs
 );
 
@@ -45,7 +45,7 @@ router.get(
 router.delete(
     "/jobs/:jobId",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     deleteJob
 );
 
@@ -58,7 +58,7 @@ router.delete(
 router.get(
     "/jobs",
     authenticate,
-    authorizeRoles("student"),
+    authorizeRoles("STUDENT"),
     getAllJobs
 );
 
@@ -67,7 +67,7 @@ router.get(
 router.post(
     "/jobs/:jobId/apply",
     authenticate,
-    authorizeRoles("student"),
+    authorizeRoles("STUDENT"),
     applyToJob
 );
 
@@ -81,7 +81,7 @@ router.post(
 router.get(
     "/jobs/:jobId/applications",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     getApplicants
 );
 
@@ -92,7 +92,7 @@ router.get(
 router.post(
     "/applications/:applicationId/offer",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     createEmploymentOffer
 );
 
@@ -101,7 +101,7 @@ router.post(
 router.get(
     "/employees",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     getOrganisationEmployees
 );
 
@@ -112,7 +112,7 @@ router.get(
 router.post(
     "/employees/:offerId/terminate",
     authenticate,
-    authorizeRoles("organization"),
+    authorizeRoles("ORGANIZATION"),
     terminateEmployment
 );
 
@@ -125,7 +125,7 @@ router.post(
 router.get(
     "/offers",
     authenticate,
-    authorizeRoles("student"),
+    authorizeRoles("STUDENT"),
     getMyOffers
 );
 
@@ -135,7 +135,7 @@ router.get(
 router.post(
     "/offers/:offerId/accept",
     authenticate,
-    authorizeRoles("student"),
+    authorizeRoles("STUDENT"),
     acceptOffer
 );
 
@@ -145,7 +145,7 @@ router.post(
 router.post(
     "/offers/:offerId/reject",
     authenticate,
-    authorizeRoles("student"),
+    authorizeRoles("STUDENT"),
     rejectOffer
 );
 

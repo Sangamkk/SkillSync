@@ -14,6 +14,7 @@ import StudentDashboard from "./pages/student/Dashboard";
 import Certificate from "./pages/student/Certificate";
 import Jobs from "./pages/student/Jobs";
 import StudentOffers from "./pages/student/StudentOffers";
+import AddProject from "./pages/student/AddProject";
 
 // Organisation Pages
 import CreateJob from "./pages/Organisation/CreateJob";
@@ -36,6 +37,7 @@ function App() {
         <Route path="/certificate" element={<Certificate />} />
         <Route path="/student/jobs" element={<Jobs />} />
         <Route path="/student/offers" element={<StudentOffers />} />
+        <Route path="/student/project" element={<AddProject />} />
 
         {/* Organisation Routes */}
         <Route path="/org/register" element={<RegisterOrganisation />} />

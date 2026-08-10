@@ -13,6 +13,27 @@ export const createVerificationRequest = async (certificateHash, credentialType,
     return tx.hash;
 };
 
+export const createProjectVerificationRequest = async (
+    projectHash,
+    issuer,
+    expiry
+) => {
+
+    const contract = await getRequestContract();
+
+    const tx = await contract.createRequest(
+        projectHash,
+        1, // Project
+        2, // AddProjectVerification
+        issuer,
+        expiry
+    );
+
+    await tx.wait();
+
+    return tx.hash;
+};
+
 export const getIssuerRequests = async () => {
 
     const contract = await getRequestContract();

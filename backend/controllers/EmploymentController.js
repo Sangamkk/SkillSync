@@ -1,6 +1,8 @@
 import Job from "../models/Job.js";
 import Application from "../models/Application.js";
 import Employment from "../models/Employment.js";
+
+
 export const createJob = async (req, res) => {
   try {
     console.log("BODY:", req.body);
@@ -32,8 +34,11 @@ export const createJob = async (req, res) => {
     });
   }
 };
+
+
 export const getAllJobs = async (req, res) => {
   try {
+    console.log("getJobs is Alive... in EmploymentController")
     const jobs = await Job.find({
       isActive: true,
     }).populate("organisation", "name email");
@@ -193,6 +198,7 @@ export const createEmploymentOffer = async (req, res) => {
 
 export const getMyOffers = async (req, res) => {
   try {
+    console.log("I am alive getMyOffers");
     const offers = await Application.find({
       student: "6a741d9642521173053bdb53",// req.user.id, after student-login completed(jwt based)
       status: "Offered",

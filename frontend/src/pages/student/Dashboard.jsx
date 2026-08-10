@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getProfile } from "../../services/studentService";
 import { useNavigate } from "react-router-dom";
 import MeshBackground from "../../components/common/MeshBackground";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
 
@@ -36,11 +37,10 @@ const Dashboard = () => {
     return (
 
         <div
-            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${
-                darkMode
+            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${darkMode
                     ? "bg-[#070B14] text-white"
                     : "bg-[#F6F8FC] text-slate-900"
-            }`}
+                }`}
         >
 
             {/* ================= MESH ================= */}
@@ -51,19 +51,43 @@ const Dashboard = () => {
             {/* ================= BACKGROUND GLOW ================= */}
 
             <div
-                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
+                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
                         ? "bg-blue-600/15"
                         : "bg-blue-500/10"
-                }`}
+                    }`}
             />
 
+            <Link
+                to="/student/jobs"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+                Browse Jobs
+            </Link>
+
+            <br />
+
+
+            <Link
+                to="/student/offers"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+                Job Offers
+            </Link>
+            
+            <br />
+
+            <Link
+                to="/student/project"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+                Add Project
+            </Link>
+
             <div
-                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
+                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
                         ? "bg-violet-600/15"
                         : "bg-violet-500/10"
-                }`}
+                    }`}
             />
 
 
@@ -75,11 +99,10 @@ const Dashboard = () => {
                 {/* ================= HEADER ================= */}
 
                 <div
-                    className={`mb-6 rounded-3xl border p-7 backdrop-blur-xl ${
-                        darkMode
+                    className={`mb-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode
                             ? "border-white/10 bg-white/[0.04]"
                             : "border-slate-200 bg-white/85 shadow-sm"
-                    }`}
+                        }`}
                 >
 
                     <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
@@ -91,11 +114,10 @@ const Dashboard = () => {
                             </p>
 
                             <h1
-                                className={`mt-2 text-3xl font-bold tracking-tight ${
-                                    darkMode
+                                className={`mt-2 text-3xl font-bold tracking-tight ${darkMode
                                         ? "text-white"
                                         : "text-slate-900"
-                                }`}
+                                    }`}
                             >
                                 Welcome back
                                 {user?.name
@@ -104,11 +126,10 @@ const Dashboard = () => {
                             </h1>
 
                             <p
-                                className={`mt-2 text-sm ${
-                                    darkMode
+                                className={`mt-2 text-sm ${darkMode
                                         ? "text-slate-400"
                                         : "text-slate-500"
-                                }`}
+                                    }`}
                             >
                                 Manage your digital identity and
                                 professional credentials.
@@ -120,11 +141,10 @@ const Dashboard = () => {
                         {/* Blockchain Status */}
 
                         <div
-                            className={`flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold ${
-                                darkMode
+                            className={`flex w-fit items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold ${darkMode
                                     ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                                     : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                            }`}
+                                }`}
                         >
 
                             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -146,11 +166,10 @@ const Dashboard = () => {
                     {/* ================= STUDENT INFORMATION ================= */}
 
                     <div
-                        className={`rounded-3xl border p-7 backdrop-blur-xl ${
-                            darkMode
+                        className={`rounded-3xl border p-7 backdrop-blur-xl ${darkMode
                                 ? "border-white/10 bg-white/[0.04]"
                                 : "border-slate-200 bg-white/85 shadow-sm"
-                        }`}
+                            }`}
                     >
 
                         <div className="flex items-center justify-between">
@@ -162,11 +181,10 @@ const Dashboard = () => {
                                 </p>
 
                                 <h2
-                                    className={`mt-2 text-2xl font-bold ${
-                                        darkMode
+                                    className={`mt-2 text-2xl font-bold ${darkMode
                                             ? "text-white"
                                             : "text-slate-900"
-                                    }`}
+                                        }`}
                                 >
                                     Student Information
                                 </h2>
@@ -175,11 +193,10 @@ const Dashboard = () => {
 
 
                             <div
-                                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                                    darkMode
+                                className={`flex h-11 w-11 items-center justify-center rounded-xl ${darkMode
                                         ? "bg-blue-500/10 text-blue-400"
                                         : "bg-blue-50 text-blue-600"
-                                }`}
+                                    }`}
                             >
                                 ◈
                             </div>
@@ -195,11 +212,10 @@ const Dashboard = () => {
                             {/* Full Name */}
 
                             <div
-                                className={`rounded-2xl p-5 ${
-                                    darkMode
+                                className={`rounded-2xl p-5 ${darkMode
                                         ? "bg-white/[0.035]"
                                         : "bg-slate-50"
-                                }`}
+                                    }`}
                             >
 
                                 <p className="text-xs uppercase tracking-wider text-slate-500">
@@ -207,11 +223,10 @@ const Dashboard = () => {
                                 </p>
 
                                 <p
-                                    className={`mt-2 font-semibold ${
-                                        darkMode
+                                    className={`mt-2 font-semibold ${darkMode
                                             ? "text-slate-100"
                                             : "text-slate-800"
-                                    }`}
+                                        }`}
                                 >
                                     {user?.name || "—"}
                                 </p>
@@ -222,11 +237,10 @@ const Dashboard = () => {
                             {/* Email */}
 
                             <div
-                                className={`rounded-2xl p-5 ${
-                                    darkMode
+                                className={`rounded-2xl p-5 ${darkMode
                                         ? "bg-white/[0.035]"
                                         : "bg-slate-50"
-                                }`}
+                                    }`}
                             >
 
                                 <p className="text-xs uppercase tracking-wider text-slate-500">
@@ -234,11 +248,10 @@ const Dashboard = () => {
                                 </p>
 
                                 <p
-                                    className={`mt-2 break-all font-semibold ${
-                                        darkMode
+                                    className={`mt-2 break-all font-semibold ${darkMode
                                             ? "text-slate-100"
                                             : "text-slate-800"
-                                    }`}
+                                        }`}
                                 >
                                     {user?.email || "—"}
                                 </p>
@@ -249,11 +262,10 @@ const Dashboard = () => {
                             {/* USN */}
 
                             <div
-                                className={`rounded-2xl p-5 ${
-                                    darkMode
+                                className={`rounded-2xl p-5 ${darkMode
                                         ? "bg-white/[0.035]"
                                         : "bg-slate-50"
-                                }`}
+                                    }`}
                             >
 
                                 <p className="text-xs uppercase tracking-wider text-slate-500">
@@ -261,11 +273,10 @@ const Dashboard = () => {
                                 </p>
 
                                 <p
-                                    className={`mt-2 font-semibold ${
-                                        darkMode
+                                    className={`mt-2 font-semibold ${darkMode
                                             ? "text-slate-100"
                                             : "text-slate-800"
-                                    }`}
+                                        }`}
                                 >
                                     {user?.usn || "—"}
                                 </p>
@@ -276,11 +287,10 @@ const Dashboard = () => {
                             {/* College */}
 
                             <div
-                                className={`rounded-2xl p-5 ${
-                                    darkMode
+                                className={`rounded-2xl p-5 ${darkMode
                                         ? "bg-white/[0.035]"
                                         : "bg-slate-50"
-                                }`}
+                                    }`}
                             >
 
                                 <p className="text-xs uppercase tracking-wider text-slate-500">
@@ -288,11 +298,10 @@ const Dashboard = () => {
                                 </p>
 
                                 <p
-                                    className={`mt-2 font-semibold ${
-                                        darkMode
+                                    className={`mt-2 font-semibold ${darkMode
                                             ? "text-slate-100"
                                             : "text-slate-800"
-                                    }`}
+                                        }`}
                                 >
                                     {user?.college || "—"}
                                 </p>
@@ -305,11 +314,10 @@ const Dashboard = () => {
                         {/* ================= WALLET ================= */}
 
                         <div
-                            className={`mt-4 rounded-2xl border p-5 ${
-                                darkMode
+                            className={`mt-4 rounded-2xl border p-5 ${darkMode
                                     ? "border-blue-500/10 bg-blue-500/[0.04]"
                                     : "border-blue-100 bg-blue-50/50"
-                            }`}
+                                }`}
                         >
 
                             <div className="flex items-center gap-3">
@@ -325,11 +333,10 @@ const Dashboard = () => {
                                     </p>
 
                                     <p
-                                        className={`mt-1 break-all font-mono text-xs ${
-                                            darkMode
+                                        className={`mt-1 break-all font-mono text-xs ${darkMode
                                                 ? "text-slate-300"
                                                 : "text-slate-600"
-                                        }`}
+                                            }`}
                                     >
                                         {user?.walletAddress || "—"}
                                     </p>
@@ -346,19 +353,17 @@ const Dashboard = () => {
                     {/* ================= DIGITAL IDENTITY ================= */}
 
                     <div
-                        className={`relative overflow-hidden rounded-3xl border p-7 backdrop-blur-xl ${
-                            darkMode
+                        className={`relative overflow-hidden rounded-3xl border p-7 backdrop-blur-xl ${darkMode
                                 ? "border-white/10 bg-[#111827]/90"
                                 : "border-slate-200 bg-white/85 shadow-sm"
-                        }`}
+                            }`}
                     >
 
                         <div
-                            className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-[80px] ${
-                                darkMode
+                            className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-[80px] ${darkMode
                                     ? "bg-blue-600/15"
                                     : "bg-blue-500/10"
-                            }`}
+                                }`}
                         />
 
 
@@ -395,11 +400,10 @@ const Dashboard = () => {
                             <div className="mt-7 text-center">
 
                                 <h3
-                                    className={`text-xl font-bold ${
-                                        darkMode
+                                    className={`text-xl font-bold ${darkMode
                                             ? "text-white"
                                             : "text-slate-900"
-                                    }`}
+                                        }`}
                                 >
                                     {user?.name || "Student"}
                                 </h3>
@@ -414,11 +418,10 @@ const Dashboard = () => {
                             {/* Identity Status */}
 
                             <div
-                                className={`mt-7 rounded-2xl border p-4 text-center ${
-                                    darkMode
+                                className={`mt-7 rounded-2xl border p-4 text-center ${darkMode
                                         ? "border-emerald-500/20 bg-emerald-500/[0.05]"
                                         : "border-emerald-200 bg-emerald-50"
-                                }`}
+                                    }`}
                             >
 
                                 <div className="flex items-center justify-center gap-2">
@@ -447,11 +450,10 @@ const Dashboard = () => {
                 {/* ================= CERTIFICATES ================= */}
 
                 <div
-                    className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${
-                        darkMode
+                    className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode
                             ? "border-white/10 bg-white/[0.04]"
                             : "border-slate-200 bg-white/85 shadow-sm"
-                    }`}
+                        }`}
                 >
 
                     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
@@ -463,11 +465,10 @@ const Dashboard = () => {
                             </p>
 
                             <h2
-                                className={`mt-2 text-2xl font-bold ${
-                                    darkMode
+                                className={`mt-2 text-2xl font-bold ${darkMode
                                         ? "text-white"
                                         : "text-slate-900"
-                                }`}
+                                    }`}
                             >
                                 Manage Certificates
                             </h2>

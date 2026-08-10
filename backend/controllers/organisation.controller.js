@@ -147,6 +147,7 @@ export const organisationLogin = async (req, res) => {
                 message: "Wallet address is required"
             });
         }
+        console.log("Forwarding to service org-Login.")
         const result = await organisationLoginService( walletAddress );
         return res.status(200).json({
             success: true,

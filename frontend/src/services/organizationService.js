@@ -6,7 +6,17 @@ export const applyOrganisation = async (data) => {
 };
 
 export const getPendingApplications = async () => {
-    const response = await axios.get( `${API}/pending` );
+    const response = await api.get( "organisation/pending" );
     return response.data;
 };
 
+export const orgLogin = async (walletAddress) => {
+    console.log(walletAddress,".....")
+    const response = await api.post( "organisation/login",
+        {
+            walletAddress
+        }
+    );
+    console.log(response);
+    return response.data;
+};

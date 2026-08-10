@@ -1,6 +1,8 @@
 import { getOrganisationRegistry } from "../utils/organisationRegistry";
+import {orgLogin} from "../services/organizationService";
 
-export const organisationLogin = async () => {
+
+export const organisationLogin = async (walletAddress) => {
 
     const contract = await getOrganisationRegistry();
 
@@ -16,14 +18,16 @@ export const organisationLogin = async () => {
         throw new Error("Organisation is inactive");
     }
 
+    const response=await  orgLogin(walletAddress);
+    console.log( "Wallet connected:", walletAddress );
     localStorage.setItem(
         "token",
-        response.data.token
+        response.token
     );
 
     localStorage.setItem(
         "user",
-        JSON.stringify(response.data.user)
+        JSON.stringify(response.user)
     );
 
     return {

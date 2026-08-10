@@ -130,8 +130,8 @@ export const getCertificateByHash = async (req, res) => {
 
         const { hash } = req.params;
 
-        const certificate =
-            await getCertificateByHashService(hash);
+        console.log("start...");
+        const certificate = await getCertificateByHashService(hash);
 
         if (!certificate) {
 
@@ -144,6 +144,7 @@ export const getCertificateByHash = async (req, res) => {
             });
 
         }
+        console.log("got Certificate...",certificate);
 
         res.status(200).json({
 

@@ -1,4 +1,5 @@
 import OrganisationApplication from "../models/OrganisationApplication.js";
+import { generateToken } from "../utils/jwt.js"
 
 export const createApplicationService = async (data) => {
 
@@ -44,46 +45,32 @@ export const rejectApplicationService = async (id) => {
 export const organisationLoginService = async (walletAddress) => {
     const normalizedWallet = walletAddress.toLowerCase();
 
+    console.log("Searching in Database - orgLogin.")
     const organisation = await OrganisationApplication.findOne({
-            walletAddress: normalizedWallet,
-            status: "Approved"
-        });
+        walletAddress: normalizedWallet,
+        status: "Approved"
+    });
 
     if (!organisation) {
-        const error = new Error( "Organization is not verified" );
+        const error = new Error("Organization is not verified");
         error.statusCode = 401;
         throw error;
     }
 
-    const token = jwt.sign(
-        {
-            userId: organisation._id,
-            role: "organization",
-            walletAddress:
-                organisation.walletAddress
-        },
-
-        process.env.JWT_SECRET,
-
-        {
-            expiresIn:
-                process.env.JWT_EXPIRES_IN || "1d"
-        }
-    );
-
+    const token = generateToken({
+        _id: organisation._id,
+        role: "ORGANISATION",
+        walletAddress: organisation.walletAddress
+    });
+    console.log("Sending the result - orgLogin.")
     return {
-
         token,
-
         user: {
             _id: organisation._id,
             name: organisation.organisationName,
             email: organisation.email,
-            role: "organization",
-            walletAddress:
-                organisation.walletAddress
+            role: "organisation",
+            walletAddress: organisation.walletAddress
         }
-
     };
-
 };
