@@ -1,4 +1,4 @@
-import { createProjectService} from "../services/createProjectService.js";
+import { createProjectService,getPendingProjectsService} from "../services/createProjectService.js";
 
 export const createProject = async (req, res) => {
 
@@ -38,6 +38,42 @@ export const createProject = async (req, res) => {
             message:
                 error.message ||
                 "Failed to create project"
+        });
+    }
+};
+
+
+
+export const getPendingProjects = async (req, res) => {
+
+    try {
+
+        console.log(
+            "Fetching pending projects for:",
+            req.user.walletAddress
+        );
+
+        const projects = await getPendingProjectsService( req.user.walletAddress );
+
+        return res.status(200).json({
+            success: true,
+            projects
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Get Pending Projects Error:",
+            error
+        );
+
+        return res.status(
+            error.statusCode || 500
+        ).json({
+            success: false,
+            message:
+                error.message ||
+                "Failed to fetch pending projects"
         });
     }
 };

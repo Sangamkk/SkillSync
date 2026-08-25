@@ -48,3 +48,29 @@ export const createProjectService = async (projectData) => {
 
     return project;
 };
+
+
+export const getPendingProjectsService = async (issuerWallet) => {
+
+    console.log("Issuer wallet received:", issuerWallet);
+    console.log(
+        "Normalized wallet:",
+        issuerWallet.toLowerCase()
+    );
+    const allProjects = await Project.find({});
+
+    console.log("All projects:", allProjects);
+
+    const projects = await Project.find({
+        issuerWallet: issuerWallet.toLowerCase(),
+        status: "PENDING"
+    })
+        .populate(
+            "student",
+            "name email usn college walletAddress"
+        )
+        .sort({ createdAt: -1 });
+
+        console.log(projects);
+    return projects;
+};

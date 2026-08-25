@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { getIssuerRequests } from "../services/requestService";
 import { getCertificateByHash } from "../services/certificateService";
 import MeshBackground from "../components/common/MeshBackground";
+import { Link } from "react-router-dom";
 
 const OrganisationRequests = () => {
 
@@ -80,6 +81,13 @@ const OrganisationRequests = () => {
                         : "bg-blue-500/10"
                 }`}
             />
+
+            <Link
+                to="/organisation/project"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            >
+                Browse Pending Projects
+            </Link>
 
             <div
                 className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${

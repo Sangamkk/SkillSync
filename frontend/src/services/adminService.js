@@ -38,10 +38,7 @@ export const rejectOrganisation = async (id) => {
 
 
 export const getVerifiedOrganisations = async () => {
-
-    const response = await api.get(
-        "/organisation/verified"
-    );
-
+    const response = await api.get("/organisation/verified");
+    console.log("Verified organisations response:", response);
     return response.data.organisations;
 };

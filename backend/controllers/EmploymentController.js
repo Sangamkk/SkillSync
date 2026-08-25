@@ -15,9 +15,9 @@ export const createJob = async (req, res) => {
       location,
       stipend,
     } = req.body;
-
+ 
     const job = await Job.create({
-      organisation: "6a737479711c5b766fdf159d",// req.user.id, after org-login completed(jwt based)
+      organisation: req.user.userId,// req.user.id, after org-login completed(jwt based)
       title,
       description,
       requiredSkills,
@@ -54,7 +54,7 @@ export const getAllJobs = async (req, res) => {
 export const getMyJobs = async (req, res) => {
   try {
     const jobs = await Job.find({
-      organisation: "6a737479711c5b766fdf159d",//same shi
+      organisation: req.user.userId,//same shi
     });
 
     res.status(200).json(jobs);
@@ -80,7 +80,7 @@ export const applyToJob = async (req, res) => {
     const existingApplication =
       await Application.findOne({
         job: jobId,
-        student: "6a741d9642521173053bdb53",// req.user.id, after student-login completed(jwt based)
+        student: req.user.userId,// req.user.id, after student-login completed(jwt based)
       });
 
     if (existingApplication) {
@@ -92,7 +92,7 @@ export const applyToJob = async (req, res) => {
     const application =
       await Application.create({
         job: jobId,
-        student: "6a741d9642521173053bdb53",// req.user.id, after student-login completed(jwt based)
+        student: req.user.userId,// req.user.id, after student-login completed(jwt based)
         organisation: job.organisation,
         status: "Applied",
       });
@@ -147,7 +147,7 @@ export const getApplicants = async (req, res) => {
     })
       .populate("student", "name email walletAddress")
       .populate("job");
-
+    console.log(applicants);
     res.status(200).json(applicants);
   } catch (error) {
     res.status(500).json({
@@ -200,7 +200,7 @@ export const getMyOffers = async (req, res) => {
   try {
     console.log("I am alive getMyOffers");
     const offers = await Application.find({
-      student: "6a741d9642521173053bdb53",// req.user.id, after student-login completed(jwt based)
+      student: req.user.userId,// req.user.id, after student-login completed(jwt based)
       status: "Offered",
     })
       .populate("job")
@@ -296,7 +296,7 @@ export const getOrganisationEmployees =
       const employees =
         await Employment.find({
           organisation:
-            "6a737479711c5b766fdf159d", // temp change later 
+            req.user.userId, // temp change later 
         })
           .populate(
             "student",

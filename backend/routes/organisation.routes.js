@@ -18,6 +18,6 @@ router.post("/apply",createApplication);
 router.get("/pending",getPendingApplications);
 router.put("/approve",approveApplication);
 router.put("/reject",authenticate,authorizeRoles("ADMIN"), rejectApplication);
-router.get("/verified",authenticate,authorizeRoles("ADMIN","ORGANIZATION","STUDENT"),getVerifiedOrganisations);
+router.get("/verified",authenticate,authorizeRoles("ADMIN","ORGANISATION","STUDENT"),getVerifiedOrganisations);
 
 export default router;

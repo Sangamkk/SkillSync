@@ -14,7 +14,7 @@ const UploadCertificate = () => {
         issueDate: "",
         expiryDate: "",
         description: "",
-        hasExpiry: "yes",
+        hasExpiry: "",
     });
 
     const [organisations, setOrganisations] = useState([]);
@@ -145,7 +145,7 @@ const UploadCertificate = () => {
             );
             data.append(
                 "certificateType",
-                credentialType
+                formData.certificateType
             );
             data.append(
                 "issueDate",
@@ -153,7 +153,7 @@ const UploadCertificate = () => {
             );
             data.append(
                 "expiryDate",
-                formData.expiryDate
+                formData.expiryDate || ""
             );
             data.append(
                 "description",
@@ -165,12 +165,11 @@ const UploadCertificate = () => {
             );
             data.append(
                 "hasExpiry",
-                expiry
+                formData.hasExpiry === "yes"
             );
 
 
-            const response =
-                await uploadCertificate(data);
+            const response = await uploadCertificate(data);
 
             alert(response.message);
 
@@ -179,58 +178,42 @@ const UploadCertificate = () => {
 
             try {
 
-                const hash =
-                    response.hashBytes32;
+                const hash = response.hashBytes32;
 
-                const txHash =
-                    await createVerificationRequest(
+                const txHash = await createVerificationRequest(
                         hash,
-                        credentialType.Certificate,
-                        requestTypes.AddCertificate,
+                        CredentialType.Certificate,
+                        RequestType.AddCertificate,
                         selectedIssuerWallet,
-                        hasExpiry
+                        formData.hasExpiry
                     );
 
                 console.log(txHash);
-
-                alert(
-                    "Verification Request Created Successfully"
-                );
-
+                alert( "Verification Request Created Successfully" );
             } catch (error) {
-
                 console.log(error);
-
                 alert(
                     error.shortMessage ||
                     error.reason ||
                     error.message
                 );
-
             }
-
         } catch (error) {
-
             console.log(error);
-
             alert(
                 error.response?.data?.message ||
                 "Upload Failed"
             );
-
         }
-
     };
-
 
     return (
 
         <div
-            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${
-                darkMode
-                    ? "bg-[#070B14] text-white"
-                    : "bg-[#F6F8FC] text-slate-900"
-            }`}
+            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${darkMode
+                ? "bg-[#070B14] text-white"
+                : "bg-[#F6F8FC] text-slate-900"
+                }`}
         >
 
             {/* ================= MESH ================= */}
@@ -241,19 +224,17 @@ const UploadCertificate = () => {
             {/* ================= BACKGROUND GLOW ================= */}
 
             <div
-                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
-                        ? "bg-blue-600/15"
-                        : "bg-blue-500/10"
-                }`}
+                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
+                    ? "bg-blue-600/15"
+                    : "bg-blue-500/10"
+                    }`}
             />
 
             <div
-                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
-                        ? "bg-violet-600/15"
-                        : "bg-violet-500/10"
-                }`}
+                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
+                    ? "bg-violet-600/15"
+                    : "bg-violet-500/10"
+                    }`}
             />
 
 
@@ -271,21 +252,19 @@ const UploadCertificate = () => {
                     </p>
 
                     <h1
-                        className={`mt-2 text-3xl font-bold tracking-tight sm:text-4xl ${
-                            darkMode
-                                ? "text-white"
-                                : "text-slate-900"
-                        }`}
+                        className={`mt-2 text-3xl font-bold tracking-tight sm:text-4xl ${darkMode
+                            ? "text-white"
+                            : "text-slate-900"
+                            }`}
                     >
                         Upload Certificate
                     </h1>
 
                     <p
-                        className={`mt-3 max-w-2xl text-sm leading-6 ${
-                            darkMode
-                                ? "text-slate-400"
-                                : "text-slate-500"
-                        }`}
+                        className={`mt-3 max-w-2xl text-sm leading-6 ${darkMode
+                            ? "text-slate-400"
+                            : "text-slate-500"
+                            }`}
                     >
                         Add a credential to your SkillSync identity
                         and send it to a verified organisation for
@@ -298,30 +277,27 @@ const UploadCertificate = () => {
                 {/* ================= CARD ================= */}
 
                 <div
-                    className={`rounded-3xl border p-7 shadow-2xl backdrop-blur-xl sm:p-9 ${
-                        darkMode
-                            ? "border-white/10 bg-white/[0.045] shadow-black/30"
-                            : "border-slate-200 bg-white/90 shadow-slate-200/70"
-                    }`}
+                    className={`rounded-3xl border p-7 shadow-2xl backdrop-blur-xl sm:p-9 ${darkMode
+                        ? "border-white/10 bg-white/[0.045] shadow-black/30"
+                        : "border-slate-200 bg-white/90 shadow-slate-200/70"
+                        }`}
                 >
 
 
                     {/* ================= SECTION HEADER ================= */}
 
                     <div
-                        className={`mb-8 flex items-center gap-4 border-b pb-6 ${
-                            darkMode
-                                ? "border-white/10"
-                                : "border-slate-200"
-                        }`}
+                        className={`mb-8 flex items-center gap-4 border-b pb-6 ${darkMode
+                            ? "border-white/10"
+                            : "border-slate-200"
+                            }`}
                     >
 
                         <div
-                            className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-                                darkMode
-                                    ? "bg-blue-500/10 text-blue-400"
-                                    : "bg-blue-50 text-blue-600"
-                            }`}
+                            className={`flex h-12 w-12 items-center justify-center rounded-2xl ${darkMode
+                                ? "bg-blue-500/10 text-blue-400"
+                                : "bg-blue-50 text-blue-600"
+                                }`}
                         >
                             ◈
                         </div>
@@ -355,11 +331,10 @@ const UploadCertificate = () => {
                         <div>
 
                             <label
-                                className={`mb-2 block text-sm font-semibold ${
-                                    darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                }`}
+                                className={`mb-2 block text-sm font-semibold ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                    }`}
                             >
                                 Certificate Name
                             </label>
@@ -371,11 +346,10 @@ const UploadCertificate = () => {
                                     formData.certificateName
                                 }
                                 onChange={handleChange}
-                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                    darkMode
-                                        ? "border-white/10 bg-white/[0.04] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.07] focus:ring-4 focus:ring-blue-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                }`}
+                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                    ? "border-white/10 bg-white/[0.04] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.07] focus:ring-4 focus:ring-blue-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                    }`}
                                 placeholder="AWS Cloud Practitioner"
                                 required
                             />
@@ -388,11 +362,10 @@ const UploadCertificate = () => {
                         <div>
 
                             <label
-                                className={`mb-2 block text-sm font-semibold ${
-                                    darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                }`}
+                                className={`mb-2 block text-sm font-semibold ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                    }`}
                             >
                                 Credential Type
                             </label>
@@ -403,11 +376,10 @@ const UploadCertificate = () => {
                                     formData.certificateType
                                 }
                                 onChange={handleChange}
-                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                    darkMode
-                                        ? "border-white/10 bg-[#111722] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                }`}
+                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                    ? "border-white/10 bg-[#111722] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                    }`}
                                 required
                             >
 
@@ -451,11 +423,10 @@ const UploadCertificate = () => {
                             <div>
 
                                 <label
-                                    className={`mb-2 block text-sm font-semibold ${
-                                        darkMode
-                                            ? "text-slate-300"
-                                            : "text-slate-700"
-                                    }`}
+                                    className={`mb-2 block text-sm font-semibold ${darkMode
+                                        ? "text-slate-300"
+                                        : "text-slate-700"
+                                        }`}
                                 >
                                     Issue Date
                                 </label>
@@ -467,11 +438,10 @@ const UploadCertificate = () => {
                                         formData.issueDate
                                     }
                                     onChange={handleChange}
-                                    className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                        darkMode
-                                            ? "border-white/10 bg-white/[0.04] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
-                                            : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                    }`}
+                                    className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                        ? "border-white/10 bg-white/[0.04] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
+                                        : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                        }`}
                                     required
                                 />
 
@@ -481,11 +451,10 @@ const UploadCertificate = () => {
                             <div>
 
                                 <label
-                                    className={`mb-2 block text-sm font-semibold ${
-                                        darkMode
-                                            ? "text-slate-300"
-                                            : "text-slate-700"
-                                    }`}
+                                    className={`mb-2 block text-sm font-semibold ${darkMode
+                                        ? "text-slate-300"
+                                        : "text-slate-700"
+                                        }`}
                                 >
                                     Does this credential expire?
                                 </label>
@@ -496,11 +465,10 @@ const UploadCertificate = () => {
                                         formData.hasExpiry
                                     }
                                     onChange={handleChange}
-                                    className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                        darkMode
-                                            ? "border-white/10 bg-[#111722] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
-                                            : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                    }`}
+                                    className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                        ? "border-white/10 bg-[#111722] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
+                                        : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                        }`}
                                 >
 
                                     <option value="yes">
@@ -519,11 +487,10 @@ const UploadCertificate = () => {
                                     <div className="mt-5">
 
                                         <label
-                                            className={`mb-2 block text-sm font-semibold ${
-                                                darkMode
-                                                    ? "text-slate-300"
-                                                    : "text-slate-700"
-                                            }`}
+                                            className={`mb-2 block text-sm font-semibold ${darkMode
+                                                ? "text-slate-300"
+                                                : "text-slate-700"
+                                                }`}
                                         >
                                             Expiry Date
                                         </label>
@@ -537,11 +504,10 @@ const UploadCertificate = () => {
                                             onChange={
                                                 handleChange
                                             }
-                                            className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                                darkMode
-                                                    ? "border-white/10 bg-white/[0.04] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
-                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                            }`}
+                                            className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                                ? "border-white/10 bg-white/[0.04] text-white focus:border-blue-500/60 focus:ring-4 focus:ring-blue-500/10"
+                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                                }`}
                                             required
                                         />
 
@@ -559,11 +525,10 @@ const UploadCertificate = () => {
                         <div>
 
                             <label
-                                className={`mb-2 block text-sm font-semibold ${
-                                    darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                }`}
+                                className={`mb-2 block text-sm font-semibold ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                    }`}
                             >
                                 Select Issuer
                             </label>
@@ -575,11 +540,10 @@ const UploadCertificate = () => {
                                 onChange={
                                     handleIssuerChange
                                 }
-                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${
-                                    darkMode
-                                        ? "border-white/10 bg-[#111722] text-white focus:border-violet-500/60 focus:ring-4 focus:ring-violet-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10"
-                                }`}
+                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                    ? "border-white/10 bg-[#111722] text-white focus:border-violet-500/60 focus:ring-4 focus:ring-violet-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10"
+                                    }`}
                                 required
                             >
 
@@ -604,11 +568,10 @@ const UploadCertificate = () => {
                             {formData.issuer && (
 
                                 <div
-                                    className={`mt-3 flex items-center gap-2 rounded-xl px-4 py-3 text-xs ${
-                                        darkMode
-                                            ? "bg-emerald-500/5 text-emerald-400"
-                                            : "bg-emerald-50 text-emerald-600"
-                                    }`}
+                                    className={`mt-3 flex items-center gap-2 rounded-xl px-4 py-3 text-xs ${darkMode
+                                        ? "bg-emerald-500/5 text-emerald-400"
+                                        : "bg-emerald-50 text-emerald-600"
+                                        }`}
                                 >
 
                                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -627,11 +590,10 @@ const UploadCertificate = () => {
                         <div>
 
                             <label
-                                className={`mb-2 block text-sm font-semibold ${
-                                    darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                }`}
+                                className={`mb-2 block text-sm font-semibold ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                    }`}
                             >
                                 Description
                             </label>
@@ -643,11 +605,10 @@ const UploadCertificate = () => {
                                     formData.description
                                 }
                                 onChange={handleChange}
-                                className={`w-full resize-none rounded-xl border px-4 py-3.5 outline-none transition ${
-                                    darkMode
-                                        ? "border-white/10 bg-white/[0.04] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.07] focus:ring-4 focus:ring-blue-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                }`}
+                                className={`w-full resize-none rounded-xl border px-4 py-3.5 outline-none transition ${darkMode
+                                    ? "border-white/10 bg-white/[0.04] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.07] focus:ring-4 focus:ring-blue-500/10"
+                                    : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                    }`}
                                 placeholder="Additional details..."
                             />
 
@@ -659,31 +620,28 @@ const UploadCertificate = () => {
                         <div>
 
                             <label
-                                className={`mb-2 block text-sm font-semibold ${
-                                    darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                }`}
+                                className={`mb-2 block text-sm font-semibold ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                    }`}
                             >
                                 Certificate File
                             </label>
 
                             <div
-                                className={`rounded-2xl border border-dashed p-6 ${
-                                    darkMode
-                                        ? "border-white/15 bg-white/[0.025]"
-                                        : "border-slate-300 bg-slate-50"
-                                }`}
+                                className={`rounded-2xl border border-dashed p-6 ${darkMode
+                                    ? "border-white/15 bg-white/[0.025]"
+                                    : "border-slate-300 bg-slate-50"
+                                    }`}
                             >
 
                                 <div className="text-center">
 
                                     <div
-                                        className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${
-                                            darkMode
-                                                ? "bg-blue-500/10 text-blue-400"
-                                                : "bg-blue-50 text-blue-600"
-                                        }`}
+                                        className={`mx-auto flex h-12 w-12 items-center justify-center rounded-2xl ${darkMode
+                                            ? "bg-blue-500/10 text-blue-400"
+                                            : "bg-blue-50 text-blue-600"
+                                            }`}
                                     >
                                         ↑
                                     </div>
@@ -703,11 +661,10 @@ const UploadCertificate = () => {
                                     type="file"
                                     accept=".pdf,.jpg,.jpeg,.png"
                                     onChange={handleFileChange}
-                                    className={`mt-5 w-full rounded-xl border px-4 py-3 text-sm ${
-                                        darkMode
-                                            ? "border-white/10 bg-white/[0.04] text-slate-300"
-                                            : "border-slate-200 bg-white text-slate-600"
-                                    }`}
+                                    className={`mt-5 w-full rounded-xl border px-4 py-3 text-sm ${darkMode
+                                        ? "border-white/10 bg-white/[0.04] text-slate-300"
+                                        : "border-slate-200 bg-white text-slate-600"
+                                        }`}
                                     required
                                 />
 
@@ -715,11 +672,10 @@ const UploadCertificate = () => {
                                 {file && (
 
                                     <div
-                                        className={`mt-3 rounded-xl px-4 py-3 text-xs ${
-                                            darkMode
-                                                ? "bg-emerald-500/5 text-emerald-400"
-                                                : "bg-emerald-50 text-emerald-600"
-                                        }`}
+                                        className={`mt-3 rounded-xl px-4 py-3 text-xs ${darkMode
+                                            ? "bg-emerald-500/5 text-emerald-400"
+                                            : "bg-emerald-50 text-emerald-600"
+                                            }`}
                                     >
                                         ✓ {file.name}
                                     </div>
@@ -734,11 +690,10 @@ const UploadCertificate = () => {
                         {/* ================= SUBMIT ================= */}
 
                         <div
-                            className={`border-t pt-7 ${
-                                darkMode
-                                    ? "border-white/10"
-                                    : "border-slate-200"
-                            }`}
+                            className={`border-t pt-7 ${darkMode
+                                ? "border-white/10"
+                                : "border-slate-200"
+                                }`}
                         >
 
                             <button

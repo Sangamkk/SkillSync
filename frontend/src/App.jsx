@@ -6,8 +6,7 @@ import Register from "./pages/Register";
 
 import RegisterOrganisation from "./pages/RegisterOrganisation";
 import AdminDashboard from "./pages/AdminDashboard";
-import OrganisationLogin from "./pages/orgLogin";
-import OrganisationDashboard from "./pages/organizationDashboard";
+
 
 // Student Pages
 import StudentDashboard from "./pages/student/Dashboard";
@@ -17,10 +16,13 @@ import StudentOffers from "./pages/student/StudentOffers";
 import AddProject from "./pages/student/AddProject";
 
 // Organisation Pages
+import OrganisationLogin from "./pages/orgLogin";
+import OrganisationDashboard from "./pages/organizationDashboard";
 import CreateJob from "./pages/Organisation/CreateJob";
 import MyJobs from "./pages/Organisation/MyJobs";
 import Applicants from "./pages/Organisation/Applicants";
 import  Employees from "./pages/Organisation/Employee";
+import PendingProjects from "./pages/Organisation/PendingProjects";
 
 function App() {
   return (
@@ -47,6 +49,7 @@ function App() {
         <Route path="/organisation/jobs" element={<MyJobs />} />
         <Route path="/organisation/jobs/:jobId/applications" element={<Applicants />} />
         <Route  path="/organisation/employees"  element={<Employees />}/>
+        <Route  path="/organisation/project"  element={<PendingProjects />}/>
 
         
         {/* Admin */}

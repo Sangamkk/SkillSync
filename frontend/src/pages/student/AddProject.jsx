@@ -7,7 +7,7 @@ const AddProject = () => {
 
     const [formData, setFormData] = useState({
         projectName: "",
-        projectType: "Academic",
+        projectType: "",
         githubLink: "",
         description: "",
         issuer: ""
@@ -19,6 +19,7 @@ const AddProject = () => {
         const loadOrganisations = async () => {
             try {
                 const data = await getVerifiedOrganisations();
+                console.log(data)
                 setOrganisations(data);
             } catch (error) {
                 console.log(error);
@@ -44,38 +45,76 @@ const AddProject = () => {
     };
 
     const handleSubmit = async (e) => {
+
         e.preventDefault();
+
         try {
-            const user = JSON.parse(localStorage.getItem("user"));
+
             const data = {
-                student: user._id,
                 projectName: formData.projectName,
                 description: formData.description,
                 githubLink: formData.githubLink,
-                projectType: formData.projectType
+                projectType: formData.projectType,
+                issuer: formData.issuer,
+                issuerWallet: selectedIssuerWallet
             };
 
+            console.log(
+                "Data being sent to backend:",
+                data
+            );
+
             const response = await createProject(data);
-            const projectHash = "0x" + response.project.githubHash;
-            const txHash = await createProjectVerificationRequest(
+
+            console.log(
+                "Project created:",
+                response
+            );
+
+            const projectHash =
+                "0x" + response.project.githubHash;
+
+            console.log(
+                "Project Hash:",
+                projectHash
+            );
+
+            const txHash =
+                await createProjectVerificationRequest(
                     projectHash,
                     response.project.issuerWallet,
                     0
                 );
 
-            console.log("Project verification request:", txHash);
+            console.log(
+                "Project verification request:",
+                txHash
+            );
 
-            console.log(response);
             alert("Project added successfully");
+
             setFormData({
                 projectName: "",
-                description: "",
+                projectType: "Academic",
                 githubLink: "",
-                projectType: "Project"
+                description: "",
+                issuer: ""
             });
 
+            setSelectedIssuerWallet("");
+
         } catch (error) {
-            console.error(error);
+
+            console.error(
+                "Project creation error:",
+                error
+            );
+
+            console.error(
+                "Backend response:",
+                error.response?.data
+            );
+
             alert(
                 error.response?.data?.message ||
                 "Failed to add project"

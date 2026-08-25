@@ -8,7 +8,7 @@ function CreateJob() {
         title: "",
         description: "",
         requiredSkills: "",
-        employmentType: "Internship",
+        employmentType: "",
         location: "",
         stipend: "",
     });
@@ -33,7 +33,7 @@ function CreateJob() {
         e.preventDefault();
 
         try {
-
+console.log(formData);
             await createJob({
                 ...formData,
 
@@ -51,7 +51,7 @@ function CreateJob() {
                 title: "",
                 description: "",
                 requiredSkills: "",
-                employmentType: "Internship",
+                employmentType: "",
                 location: "",
                 stipend: "",
             });
@@ -311,12 +311,8 @@ function CreateJob() {
                                     Internship
                                 </option>
 
-                                <option value="FullTime">
+                                <option value="Employment">
                                     Full Time
-                                </option>
-
-                                <option value="PartTime">
-                                    Part Time
                                 </option>
 
                             </select>

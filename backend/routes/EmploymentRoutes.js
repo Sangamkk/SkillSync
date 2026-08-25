@@ -25,7 +25,7 @@ const router = express.Router();
 router.post(
     "/jobs",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     createJob
 );
 
@@ -34,7 +34,7 @@ router.post(
 router.get(
     "/jobs/my",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     getMyJobs
 );
 
@@ -45,7 +45,7 @@ router.get(
 router.delete(
     "/jobs/:jobId",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     deleteJob
 );
 
@@ -81,7 +81,7 @@ router.post(
 router.get(
     "/jobs/:jobId/applications",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     getApplicants
 );
 
@@ -92,7 +92,7 @@ router.get(
 router.post(
     "/applications/:applicationId/offer",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     createEmploymentOffer
 );
 
@@ -101,7 +101,7 @@ router.post(
 router.get(
     "/employees",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     getOrganisationEmployees
 );
 
@@ -112,7 +112,7 @@ router.get(
 router.post(
     "/employees/:offerId/terminate",
     authenticate,
-    authorizeRoles("ORGANIZATION"),
+    authorizeRoles("ORGANISATION"),
     terminateEmployment
 );
 
