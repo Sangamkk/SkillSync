@@ -53,120 +53,113 @@ export const uploadCertificate = async (req, res) => {
             .digest("hex");
         const hashBytes32 = "0x" + hashHex;
 
+        const studentId = req.user?.userId || req.body.student;
         const certificate = await uploadCertificateService({
-            student: req.body.student,
-
+            student: studentId,
             certificateName: req.body.certificateName,
             issuer: req.body.issuer,
             certificateType: req.body.certificateType,
             issueDate: req.body.issueDate,
-            expiryDate: req.body.expiryDate,
+            expiryDate: req.body.expiryDate || null,
             description: req.body.description,
-
-            // Temporary
             certificateURL: result.secure_url,
             certificateHash: hashBytes32
         });
 
-
-        // Generate SHA-256 Hash
-
-
         console.log("SHA-256 Hash :", hashHex);
-
         console.log("Bytes32 Hash :", hashBytes32);
 
         res.status(200).json({
-
             success: true,
-
-            message: "Hash Generated Successfully",
-
+            message: "Certificate uploaded and hash generated successfully",
             hashHex,
-
             hashBytes32,
             certificate
-
         });
 
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 };
 
 export const getStudentCertificates = async (req, res) => {
-
     try {
-
-        const certificates = await getStudentCertificatesService(
-            req.params.studentId
-        );
+        const studentId = req.params.studentId || req.user?.userId;
+        const certificates = await getStudentCertificatesService(studentId);
 
         res.status(200).json({
             success: true,
             certificates
         });
-
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 };
 
 export const getCertificateByHash = async (req, res) => {
-
     try {
-
         const { hash } = req.params;
-
-        console.log("start...");
         const certificate = await getCertificateByHashService(hash);
 
         if (!certificate) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: "Certificate not found"
-
             });
-
         }
-        console.log("got Certificate...",certificate);
 
         res.status(200).json({
-
             success: true,
-
             certificate
-
         });
-
-    }
-
-    catch (error) {
-
+    } catch (error) {
         res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
-
     }
+};
 
+export const updateCertificateStatus = async (req, res) => {
+    try {
+        const { certificateHash, status, txHash, rejectionReason } = req.body;
+        if (!certificateHash || !status) {
+            return res.status(400).json({
+                success: false,
+                message: "certificateHash and status are required"
+            });
+        }
+
+        const certificate = await updateCertificateStatusService(
+            certificateHash,
+            status,
+            txHash,
+            rejectionReason
+        );
+
+        if (!certificate) {
+            return res.status(404).json({
+                success: false,
+                message: "Certificate not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Certificate status updated to ${status}`,
+            certificate
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
 

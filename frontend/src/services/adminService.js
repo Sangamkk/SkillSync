@@ -24,12 +24,12 @@ export const approveOrganisation = async (id, txHash) => {
 };
 
 
-export const rejectOrganisation = async (id) => {
-
+export const rejectOrganisation = async (id, rejectionReason) => {
     const response = await api.put(
         "/organisation/reject",
         {
-            id
+            id,
+            rejectionReason
         }
     );
 

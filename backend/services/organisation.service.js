@@ -2,26 +2,76 @@ import OrganisationApplication from "../models/OrganisationApplication.js";
 import { generateToken } from "../utils/jwt.js"
 
 export const createApplicationService = async (data) => {
+    const { email, walletAddress, registrationNumber } = data;
 
-    const application = await OrganisationApplication.create(data);
-    return application;
+    // Check duplicate wallet
+    if (walletAddress) {
+        const existingWallet = await OrganisationApplication.findOne({
+            walletAddress: { $regex: new RegExp(`^${walletAddress}$`, "i") }
+        });
+        if (existingWallet) {
+            const error = new Error("This wallet is already registered or has a pending organization application.");
+            error.statusCode = 409;
+            throw error;
+        }
+    }
+
+    // Check duplicate email
+    if (email) {
+        const existingEmail = await OrganisationApplication.findOne({
+            email: { $regex: new RegExp(`^${email}$`, "i") }
+        });
+        if (existingEmail) {
+            const error = new Error("An organization application with this email already exists.");
+            error.statusCode = 409;
+            throw error;
+        }
+    }
+
+    // Check duplicate registration number
+    if (registrationNumber) {
+        const existingReg = await OrganisationApplication.findOne({
+            registrationNumber: registrationNumber.trim()
+        });
+        if (existingReg) {
+            const error = new Error("An organization application with this registration number already exists.");
+            error.statusCode = 409;
+            throw error;
+        }
+    }
+
+    try {
+        const application = await OrganisationApplication.create(data);
+        return application;
+    } catch (err) {
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern || {})[0] || "field";
+            const error = new Error(
+                field === "walletAddress"
+                    ? "This wallet is already registered or has a pending organization application."
+                    : field === "email"
+                    ? "An organization application with this email already exists."
+                    : `This ${field} is already registered.`
+            );
+            error.statusCode = 409;
+            throw error;
+        }
+        throw err;
+    }
 };
 
 export const getPendingApplicationsService = async () => {
-
     return await OrganisationApplication.find({
         status: "Pending"
-    });
-
+    }).sort({ createdAt: -1 });
 };
 
 export const approveApplicationService = async (id, txHash) => {
-
     return await OrganisationApplication.findByIdAndUpdate(
         id,
         {
             status: "Approved",
-            txHash
+            txHash: txHash || ""
         },
         {
             new: true
@@ -29,12 +79,12 @@ export const approveApplicationService = async (id, txHash) => {
     );
 };
 
-export const rejectApplicationService = async (id) => {
-
+export const rejectApplicationService = async (id, rejectionReason) => {
     return await OrganisationApplication.findByIdAndUpdate(
         id,
         {
-            status: "Rejected"
+            status: "Rejected",
+            rejectionReason: rejectionReason || "Application rejected by admin"
         },
         {
             new: true

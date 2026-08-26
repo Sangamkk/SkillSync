@@ -35,9 +35,15 @@ export const authenticate = (req, res, next) => {
             process.env.JWT_SECRET
         );
 
-        console.log("Decoded JWT:", decoded);
+        const normalizedUser = {
+            ...decoded,
+            _id: decoded?._id || decoded?.userId,
+            userId: decoded?.userId || decoded?._id,
+            role: decoded?.role ? String(decoded.role).toUpperCase() : decoded?.role,
+        };
 
-        req.user = decoded;
+        console.log("Decoded JWT:", decoded);
+        req.user = normalizedUser;
 
         console.log("Authenticated User:", req.user);
         console.log("User Role:", req.user.role);

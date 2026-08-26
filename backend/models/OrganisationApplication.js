@@ -50,6 +50,16 @@ const organisationApplicationSchema = new mongoose.Schema(
         txHash: {
             type: String,
             default: ""
+        },
+
+        rejectionReason: {
+            type: String,
+            default: ""
+        },
+
+        details: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {}
         }
     },
     {

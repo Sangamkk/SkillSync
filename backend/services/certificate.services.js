@@ -18,10 +18,24 @@ export const  getStudentCertificatesService = async (studentId) => {
 
 };
 
-export const getCertificateByHashService =async  (hash) => {
-
+export const getCertificateByHashService = async (hash) => {
     return await Certificate.findOne({
         certificateHash: hash
     });
+};
 
+export const updateCertificateStatusService = async (certificateHash, status, txHash, rejectionReason) => {
+    const update = {
+        verificationStatus: status,
+        rejectionReason: rejectionReason || ""
+    };
+    if (txHash) {
+        update.txHash = txHash;
+        update.blockchainStored = true;
+    }
+    return await Certificate.findOneAndUpdate(
+        { certificateHash },
+        update,
+        { new: true }
+    );
 };

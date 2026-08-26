@@ -44,49 +44,63 @@ function StudentOffers() {
     }
 
 
+    const [processingId, setProcessingId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
+
     async function handleAccept(offer) {
+        setProcessingId(offer.offerId);
+        setStatusMessage({ id: offer.offerId, text: "Prompting MetaMask transaction to accept offer on-chain...", type: "info" });
 
         try {
-
-            // Blockchain
+            // Step 1: Blockchain accept offer
+            setStatusMessage({ id: offer.offerId, text: "Waiting for blockchain confirmation...", type: "info" });
             await acceptOfferOnChain(offer.offerId);
 
-            // MongoDB / Backend
+            // Step 2: MongoDB / Backend
+            setStatusMessage({ id: offer.offerId, text: "Synchronizing database employment record...", type: "info" });
             await acceptOfferBackend(offer.offerId);
 
-            alert("Offer Accepted");
+            setStatusMessage({ id: offer.offerId, text: "✓ Offer Accepted successfully on-chain!", type: "success" });
 
-            fetchOffers();
-
+            setTimeout(() => {
+                fetchOffers();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1500);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Accept offer error:", err);
+            const errMsg = err.shortMessage || err.reason || err.message || "Failed to accept offer";
+            setStatusMessage({ id: offer.offerId, text: `❌ ${errMsg}`, type: "error" });
+        } finally {
+            setProcessingId(null);
         }
-
     }
 
-
     async function handleReject(offerId) {
+        setProcessingId(offerId);
+        setStatusMessage({ id: offerId, text: "Prompting MetaMask transaction to reject offer on-chain...", type: "info" });
 
         try {
-
-            // Blockchain
+            // Step 1: Blockchain reject offer
+            setStatusMessage({ id: offerId, text: "Waiting for blockchain confirmation...", type: "info" });
             await rejectOfferOnChain(offerId);
 
-            // MongoDB / Backend
+            // Step 2: MongoDB / Backend
+            setStatusMessage({ id: offerId, text: "Updating database status...", type: "info" });
             await rejectOfferBackend(offerId);
 
-            alert("Offer Rejected");
+            setStatusMessage({ id: offerId, text: "Offer Rejected.", type: "success" });
 
-            fetchOffers();
-
+            setTimeout(() => {
+                fetchOffers();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1500);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Reject offer error:", err);
+            const errMsg = err.shortMessage || err.reason || err.message || "Failed to reject offer";
+            setStatusMessage({ id: offerId, text: `❌ ${errMsg}`, type: "error" });
+        } finally {
+            setProcessingId(null);
         }
-
     }
 
 
@@ -315,6 +329,21 @@ function StudentOffers() {
 
                                 </div>
 
+                                {/* STATUS MESSAGE */}
+                                {statusMessage.id === offer.offerId && statusMessage.text && (
+                                    <div
+                                        className={`mt-4 rounded-xl p-3 text-xs font-medium ${
+                                            statusMessage.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : statusMessage.type === "error"
+                                                ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                                : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                        }`}
+                                    >
+                                        {statusMessage.text}
+                                    </div>
+                                )}
+
 
                                 {/* ================= ACTIONS ================= */}
 
@@ -323,16 +352,20 @@ function StudentOffers() {
                                     <div className="mt-6 flex flex-col gap-3 sm:flex-row">
 
                                         <button
+                                            disabled={processingId === offer.offerId}
                                             onClick={() =>
                                                 handleAccept(offer)
                                             }
-                                            className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                                            className={`flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+                                                processingId === offer.offerId ? "cursor-not-allowed opacity-60" : ""
+                                            }`}
                                         >
-                                            Accept Offer
+                                            {processingId === offer.offerId ? "Accepting..." : "✓ Accept Offer"}
                                         </button>
 
 
                                         <button
+                                            disabled={processingId === offer.offerId}
                                             onClick={() =>
                                                 handleReject(
                                                     offer.offerId
@@ -342,7 +375,7 @@ function StudentOffers() {
                                                 darkMode
                                                     ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                                                     : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                            }`}
+                                            } ${processingId === offer.offerId ? "cursor-not-allowed opacity-60" : ""}`}
                                         >
                                             Reject Offer
                                         </button>

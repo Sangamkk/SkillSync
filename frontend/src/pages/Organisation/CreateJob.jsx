@@ -8,7 +8,7 @@ function CreateJob() {
         title: "",
         description: "",
         requiredSkills: "",
-        employmentType: "",
+        employmentType: "Internship",
         location: "",
         stipend: "",
     });
@@ -32,26 +32,39 @@ function CreateJob() {
 
         e.preventDefault();
 
+        const trimmedTitle = formData.title.trim();
+        const trimmedDescription = formData.description.trim();
+        const trimmedSkills = formData.requiredSkills.trim();
+        const trimmedLocation = formData.location.trim();
+
+        if (!trimmedTitle || !trimmedDescription || !formData.employmentType || !trimmedLocation || !trimmedSkills) {
+            alert("Please fill in title, description, employment type, location, and required skills.");
+            return;
+        }
+
+        const payload = {
+            ...formData,
+            title: trimmedTitle,
+            description: trimmedDescription,
+            location: trimmedLocation,
+            requiredSkills: trimmedSkills
+                .split(",")
+                .map((skill) => skill.trim())
+                .filter(Boolean),
+        };
+
+        console.log("Final payload before createJob():", payload);
+
         try {
-console.log(formData);
-            await createJob({
-                ...formData,
-
-                requiredSkills: formData.requiredSkills
-                    .split(",")
-                    .map((skill) => skill.trim())
-                    .filter(Boolean),
-            });
-
+            await createJob(payload);
 
             alert("Job Created");
-
 
             setFormData({
                 title: "",
                 description: "",
                 requiredSkills: "",
-                employmentType: "",
+                employmentType: "Internship",
                 location: "",
                 stipend: "",
             });
@@ -306,15 +319,9 @@ console.log(formData);
                                         : "border-slate-200 bg-slate-50 text-slate-900 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                                 }`}
                             >
-
-                                <option value="Internship">
-                                    Internship
-                                </option>
-
-                                <option value="Employment">
-                                    Full Time
-                                </option>
-
+                                <option value="Internship">Internship</option>
+                                <option value="FullTime">Full-time</option>
+                                <option value="PartTime">Part-time</option>
                             </select>
 
                         </div>

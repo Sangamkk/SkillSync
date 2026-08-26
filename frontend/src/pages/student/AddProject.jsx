@@ -1,32 +1,23 @@
-import { useState, useEffect } from "react";
-import { createProject } from "../../services/projectService";
-import { getVerifiedOrganisations } from "../../services/adminService";
-import { createProjectVerificationRequest } from "../../services/requestService";
+import { useState } from "react";
+import { createProject, updateProjectStatus } from "../../services/projectService";
+import { addProjectOnChain } from "../../services/blockchainService";
+import MeshBackground from "../../components/common/MeshBackground";
+import { Link } from "react-router-dom";
 
 const AddProject = () => {
 
     const [formData, setFormData] = useState({
         projectName: "",
-        projectType: "",
+        projectType: "Academic",
         githubLink: "",
-        description: "",
-        issuer: ""
+        description: ""
     });
-    const [organisations, setOrganisations] = useState([]);
-    const [selectedIssuerWallet, setSelectedIssuerWallet] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
 
-    useEffect(() => {
-        const loadOrganisations = async () => {
-            try {
-                const data = await getVerifiedOrganisations();
-                console.log(data)
-                setOrganisations(data);
-            } catch (error) {
-                console.log(error);
-            }
-        };
-        loadOrganisations();
-    }, []);
+    const [darkMode] = useState(() => {
+        return localStorage.getItem("skillsync-theme") !== "light";
+    });
 
     const handleChange = (e) => {
         setFormData({
@@ -35,231 +26,213 @@ const AddProject = () => {
         });
     };
 
-    const handleIssuerChange = (e) => {
-        const wallet = e.target.value;
-        setSelectedIssuerWallet(wallet);
-        const organisation = organisations.find(
-            (org) => org.walletAddress === wallet
-        );
-        setFormData({ ...formData, issuer: organisation?.organisationName || "" });
-    };
-
     const handleSubmit = async (e) => {
-
         e.preventDefault();
+        setStatusMessage({ type: "", text: "" });
+        setLoading(true);
 
         try {
-
             const data = {
                 projectName: formData.projectName,
                 description: formData.description,
                 githubLink: formData.githubLink,
-                projectType: formData.projectType,
-                issuer: formData.issuer,
-                issuerWallet: selectedIssuerWallet
+                projectType: formData.projectType
             };
 
-            console.log(
-                "Data being sent to backend:",
-                data
-            );
-
+            setStatusMessage({ type: "info", text: "1/2: Saving project metadata..." });
             const response = await createProject(data);
+            console.log("Project saved in DB:", response);
 
-            console.log(
-                "Project created:",
-                response
-            );
+            const rawHash = response.project.githubHash;
+            const projectHash = rawHash.startsWith("0x") ? rawHash : "0x" + rawHash;
+            console.log("Project Hash (Bytes32):", projectHash);
 
-            const projectHash =
-                "0x" + response.project.githubHash;
+            // Step: Register project on-chain on ApplicantManager contract
+            let regTxHash;
+            try {
+                setStatusMessage({ type: "info", text: "2/2: Registering project on ApplicantManager contract... Please confirm transaction in MetaMask." });
+                regTxHash = await addProjectOnChain(projectHash);
+                console.log("Project registered on-chain:", regTxHash);
+            } catch (chainErr) {
+                console.error("Project registration failed:", chainErr);
+                const errMsg = chainErr.code === 4001 || chainErr.action === "sendTransaction"
+                    ? "Project registration cancelled."
+                    : (chainErr.shortMessage || chainErr.reason || chainErr.message || "Project registration failed.");
+                setStatusMessage({ type: "error", text: `❌ ${errMsg}` });
+                // STOP: Do NOT proceed if on-chain registration fails or is cancelled
+                return;
+            }
 
-            console.log(
-                "Project Hash:",
-                projectHash
-            );
+            // Sync on-chain registration status in DB
+            await updateProjectStatus(response.project._id, null, regTxHash, "", {
+                onChainRegistered: true
+            });
 
-            const txHash =
-                await createProjectVerificationRequest(
-                    projectHash,
-                    response.project.issuerWallet,
-                    0
-                );
-
-            console.log(
-                "Project verification request:",
-                txHash
-            );
-
-            alert("Project added successfully");
+            setStatusMessage({
+                type: "success",
+                text: `✓ Project successfully registered on-chain! Tx: ${regTxHash.slice(0, 16)}...`
+            });
 
             setFormData({
                 projectName: "",
                 projectType: "Academic",
                 githubLink: "",
-                description: "",
-                issuer: ""
+                description: ""
             });
 
-            setSelectedIssuerWallet("");
-
         } catch (error) {
-
-            console.error(
-                "Project creation error:",
-                error
-            );
-
-            console.error(
-                "Backend response:",
-                error.response?.data
-            );
-
-            alert(
-                error.response?.data?.message ||
-                "Failed to add project"
-            );
+            console.error("Project creation error:", error);
+            const errText = error.response?.data?.message || error.message || "Failed to create project";
+            setStatusMessage({
+                type: "error",
+                text: `❌ ${errText}`
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 py-10">
+        <div
+            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${
+                darkMode ? "bg-[#070B14] text-white" : "bg-[#F6F8FC] text-slate-900"
+            }`}
+        >
+            <MeshBackground darkMode={darkMode} />
 
-            <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
-
-                <h1 className="text-3xl font-bold mb-6">
-                    Add Project
-                </h1>
-
-                <form
-                    onSubmit={handleSubmit}
-                    className="space-y-5"
+            <div className="relative z-10 mx-auto max-w-3xl">
+                <div
+                    className={`rounded-3xl border p-8 backdrop-blur-xl ${
+                        darkMode
+                            ? "border-white/10 bg-white/[0.045] shadow-2xl shadow-black/30"
+                            : "border-slate-200 bg-white/90 shadow-xl"
+                    }`}
                 >
+                    <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                        <div>
+                            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
+                                Step 1 of 2
+                            </span>
+                            <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
+                                Add Project
+                            </h1>
+                            <p className="mt-2 text-sm text-slate-400">
+                                Register your project repository directly on the ApplicantManager smart contract.
+                            </p>
+                        </div>
 
-                    <div>
-
-                        <label className="font-semibold">
-                            Project Name
-                        </label>
-
-                        <input
-                            type="text"
-                            name="projectName"
-                            value={formData.projectName}
-                            onChange={handleChange}
-                            placeholder="SkillSync"
-                            className="w-full border rounded-lg p-3"
-                            required
-                        />
-
-                    </div>
-
-                    <div>
-
-                        <label className="font-semibold">
-                            Project Type
-                        </label>
-
-                        <select
-                            name="projectType"
-                            value={formData.projectType}
-                            onChange={handleChange}
-                            className="w-full border rounded-lg p-3"
+                        <Link
+                            to="/student/project/verify"
+                            className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/20"
                         >
-
-                            <option value="Project">
-                                Project
-                            </option>
-
-                            <option value="Academic">
-                                Academic Project
-                            </option>
-
-                            <option value="Personal">
-                                Personal Project
-                            </option>
-
-                        </select>
-
+                            Request Verification →
+                        </Link>
                     </div>
 
-                    <div>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold">
+                                Project Name *
+                            </label>
+                            <input
+                                type="text"
+                                name="projectName"
+                                value={formData.projectName}
+                                onChange={handleChange}
+                                placeholder="e.g. SkillSync Blockchain Platform"
+                                className={`w-full rounded-xl border px-4 py-3.5 text-sm outline-none transition ${
+                                    darkMode
+                                        ? "border-white/10 bg-white/[0.05] text-white focus:border-violet-500/60"
+                                        : "border-slate-200 bg-white text-slate-900 focus:border-violet-500/60"
+                                }`}
+                                required
+                            />
+                        </div>
 
-                        <label className="font-semibold">
-                            GitHub Repository
-                        </label>
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold">
+                                Project Type *
+                            </label>
+                            <select
+                                name="projectType"
+                                value={formData.projectType}
+                                onChange={handleChange}
+                                className={`w-full rounded-xl border px-4 py-3.5 text-sm outline-none transition ${
+                                    darkMode
+                                        ? "border-white/10 bg-[#111827] text-white focus:border-violet-500/60"
+                                        : "border-slate-200 bg-white text-slate-900 focus:border-violet-500/60"
+                                }`}
+                            >
+                                <option value="Academic">Academic Project</option>
+                                <option value="Personal">Personal Project</option>
+                                <option value="Internship">Internship Project</option>
+                                <option value="OpenSource">Open Source Contribution</option>
+                            </select>
+                        </div>
 
-                        <input
-                            type="url"
-                            name="githubLink"
-                            value={formData.githubLink}
-                            onChange={handleChange}
-                            placeholder="https://github.com/username/project"
-                            className="w-full border rounded-lg p-3"
-                            required
-                        />
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold">
+                                GitHub Repository URL *
+                            </label>
+                            <input
+                                type="url"
+                                name="githubLink"
+                                value={formData.githubLink}
+                                onChange={handleChange}
+                                placeholder="https://github.com/username/repository"
+                                className={`w-full rounded-xl border px-4 py-3.5 text-sm outline-none transition ${
+                                    darkMode
+                                        ? "border-white/10 bg-white/[0.05] text-white focus:border-violet-500/60"
+                                        : "border-slate-200 bg-white text-slate-900 focus:border-violet-500/60"
+                                }`}
+                                required
+                            />
+                        </div>
 
-                    </div>
-                    <div>
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                rows="4"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder="Describe the project goals, architecture, tech stack..."
+                                className={`w-full rounded-xl border px-4 py-3.5 text-sm outline-none transition ${
+                                    darkMode
+                                        ? "border-white/10 bg-white/[0.05] text-white focus:border-violet-500/60"
+                                        : "border-slate-200 bg-white text-slate-900 focus:border-violet-500/60"
+                                }`}
+                            />
+                        </div>
 
-                        <label className="font-semibold">
-                            Select Issuer
-                        </label>
+                        {statusMessage.text && (
+                            <div
+                                className={`rounded-2xl p-4 text-sm font-medium ${
+                                    statusMessage.type === "success"
+                                        ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                        : statusMessage.type === "error"
+                                        ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                        : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                }`}
+                            >
+                                {statusMessage.text}
+                            </div>
+                        )}
 
-                        <select
-                            value={selectedIssuerWallet}
-                            onChange={handleIssuerChange}
-                            className="w-full border rounded-lg p-3"
-                            required
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 ${
+                                loading ? "cursor-not-allowed opacity-60" : ""
+                            }`}
                         >
-
-                            <option value="">
-                                Select Issuer
-                            </option>
-
-                            {organisations.map((org) => (
-
-                                <option
-                                    key={org._id}
-                                    value={org.walletAddress}
-                                >
-                                    {org.organisationName}
-                                </option>
-
-                            ))}
-
-                        </select>
-
-                    </div>
-
-                    <div>
-
-                        <label className="font-semibold">
-                            Description
-                        </label>
-
-                        <textarea
-                            name="description"
-                            rows="5"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Describe your project..."
-                            className="w-full border rounded-lg p-3"
-                        />
-
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-                    >
-                        Add Project
-                    </button>
-
-                </form>
-
+                            {loading ? "Registering On-Chain..." : "Add Project"}
+                        </button>
+                    </form>
+                </div>
             </div>
-
         </div>
     );
 };

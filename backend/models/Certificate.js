@@ -72,6 +72,16 @@ const certificateSchema = new mongoose.Schema(
         blockchainStored: {
             type: Boolean,
             default: false
+        },
+
+        txHash: {
+            type: String,
+            default: ""
+        },
+
+        rejectionReason: {
+            type: String,
+            default: ""
         }
     },
     {
