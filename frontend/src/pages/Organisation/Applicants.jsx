@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ethers } from "ethers";
 
 import { createOffer } from "../../services/blockchainService";
@@ -14,6 +14,7 @@ import MeshBackground from "../../components/common/MeshBackground";
 function Applicants() {
 
     const { jobId } = useParams();
+    const navigate = useNavigate();
 
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -360,12 +361,25 @@ function Applicants() {
                                 </div>
 
                                 {/* ================= INSPECT CREDENTIALS ================= */}
-                                <div className="mt-4">
+                                <div className="mt-4 flex flex-wrap items-center gap-4">
                                     <button
-                                        onClick={() => toggleInspectStudent(application.student)}
-                                        className="text-xs font-semibold text-violet-400 hover:underline flex items-center gap-1"
+                                        type="button"
+                                        onClick={() =>
+                                            navigate(`/organisation/jobs/${jobId}/applications/${application._id}/profile`)
+                                        }
+                                        className={`inline-flex items-center gap-2 text-xs font-semibold transition hover:underline ${
+                                            darkMode ? "text-blue-400" : "text-blue-600"
+                                        }`}
                                     >
-                                        📜 {expandedStudentId === application.student._id ? "Hide Credentials" : "Inspect Candidate Verified Credentials"}
+                                        👤 View Professional Profile →
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleInspectStudent(application.student)}
+                                        className="inline-flex items-center gap-1 text-xs font-semibold text-violet-400 hover:underline"
+                                    >
+                                        📜 {expandedStudentId === application.student._id ? "Hide Credentials" : "Inspect Verified Credentials"}
                                     </button>
 
                                     {expandedStudentId === application.student._id && (

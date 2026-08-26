@@ -7,6 +7,7 @@ import {
 } from "../services/requestService";
 import {
     getCertificateByHash,
+    getCertificateDocument,
     updateCertificateStatus
 } from "../services/certificateService";
 import { getPendingProjects } from "../services/projectService";
@@ -104,6 +105,24 @@ const OrganisationRequests = () => {
             console.error("Failed to load requests:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleViewCertificate = async (certificateHash) => {
+        const documentWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+        console.log("Certificate document window:", { isNull: documentWindow === null });
+
+        if (!documentWindow) {
+            console.error("Certificate document window was blocked by the browser.");
+            return;
+        }
+
+        try {
+            const documentUrl = await getCertificateDocument(certificateHash);
+            documentWindow.location.replace(documentUrl);
+        } catch (error) {
+            console.error("Error loading certificate document:", error);
+            documentWindow.close();
         }
     };
 
@@ -512,16 +531,13 @@ const OrganisationRequests = () => {
 
                                 {/* View Certificate */}
 
-                                <a
-                                    href={
-                                        item.certificate.certificateURL
-                                    }
-                                    target="_blank"
-                                    rel="noreferrer"
+                                <button
+                                    type="button"
+                                    onClick={() => handleViewCertificate(item.certificate.certificateHash)}
                                     className="mt-6 flex w-full items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/5 py-3 text-sm font-semibold text-violet-400 transition-all hover:bg-violet-500/10"
                                 >
                                     View Certificate Document ↗
-                                </a>
+                                </button>
 
                                 {/* ACTION BUTTONS */}
                                 {item.request.status === 0 && item.certificate.verificationStatus !== "Verified" && item.certificate.verificationStatus !== "Rejected" && (

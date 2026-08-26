@@ -16,6 +16,7 @@ import {
   getStudentApplications,
   getJobById,
   getMyEmployment,
+    getStudentEmploymentMetadata,
 } from "../controllers/EmploymentController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
@@ -90,10 +91,17 @@ router.get(
 );
 
 router.get(
-    "/employment/my",
+    "/my",
     authenticate,
     authorizeRoles("STUDENT"),
     getMyEmployment
+);
+
+router.get(
+    "/students/:studentId",
+    authenticate,
+    authorizeRoles("ORGANISATION"),
+    getStudentEmploymentMetadata
 );
 
 // =====================================================

@@ -89,3 +89,28 @@ export const rejectVerificationRequest = async (requestId) => {
     await tx.wait();
     return tx.hash;
 };
+
+export const getRequestsForStudent = async (studentWallet) => {
+    const contract = await getRequestContract();
+    const normalizedWallet = studentWallet.toLowerCase();
+    const nextRequestId = Number(await contract.nextRequestId());
+    const requests = [];
+
+    for (let id = 1; id <= nextRequestId; id += 1) {
+        const request = await contract.requests(id);
+        if (request.student.toLowerCase() !== normalizedWallet) continue;
+        requests.push({
+            id: Number(request.id),
+            credentialHash: request.credentialHash,
+            credentialType: Number(request.credentialType),
+            requestType: Number(request.requestType),
+            student: request.student,
+            expectedVerifier: request.expectedVerifier,
+            status: Number(request.status),
+            createdAt: Number(request.createdAt),
+            expiresAt: Number(request.expiresAt)
+        });
+    }
+
+    return requests;
+};

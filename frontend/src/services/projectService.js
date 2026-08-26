@@ -16,6 +16,11 @@ export const getStudentProjects = async (studentId) => {
     return response.data.projects || response.data || [];
 };
 
+export const getCandidateProjects = async (studentId) => {
+    const response = await api.get(`/student/candidates/${studentId}/projects`);
+    return response.data.projects || [];
+};
+
 export const updateProjectStatus = async (id, status, txHash, rejectionReason, extraData = {}) => {
     const response = await api.put("/student/projects/status", {
         id,

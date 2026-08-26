@@ -25,6 +25,7 @@ import CreateJob from "./pages/Organisation/CreateJob";
 import MyJobs from "./pages/Organisation/MyJobs";
 import Applicants from "./pages/Organisation/Applicants";
 import ApplicantDetail from "./pages/Organisation/ApplicantDetail";
+import CandidateProfilePage from "./pages/Organisation/CandidateProfilePage";
 import  Employees from "./pages/Organisation/Employee";
 import PendingProjects from "./pages/Organisation/PendingProjects";
 
@@ -58,6 +59,7 @@ function App() {
         <Route path="/organisation/jobs" element={<MyJobs />} />
         <Route path="/organisation/jobs/:jobId/applications" element={<Applicants />} />
         <Route path="/organisation/jobs/:jobId/applications/:applicationId" element={<ApplicantDetail />} />
+        <Route path="/organisation/jobs/:jobId/applications/:applicationId/profile" element={<CandidateProfilePage />} />
         <Route  path="/organisation/employees"  element={<Employees />}/>
         <Route  path="/organisation/project"  element={<PendingProjects />}/>
 

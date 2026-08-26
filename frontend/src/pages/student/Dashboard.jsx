@@ -8,6 +8,7 @@ import { getStudentProjects } from "../../services/projectService";
 import { getStudentRequests } from "../../services/requestService";
 import { useNavigate, Link } from "react-router-dom";
 import MeshBackground from "../../components/common/MeshBackground";
+import ProfessionalProfile from "../../components/common/ProfessionalProfile";
 import ApplicantManagerAbi from "../../abhi/ApplicantManager.json";
 
 const normalizeToArray = (value) => {
@@ -40,6 +41,7 @@ const formatHash = (value) => {
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
+    const [studentId, setStudentId] = useState(null);
     const [projects, setProjects] = useState([]);
     const [certificates, setCertificates] = useState([]);
     const [employmentHistory, setEmploymentHistory] = useState({ currentEmployment: [], previousEmployment: [] });
@@ -61,13 +63,14 @@ const Dashboard = () => {
             const profile = await getProfile(walletAddress);
             setUser(profile);
 
-            const studentId = profile?._id || userData.id || userData._id;
+            const resolvedStudentId = profile?._id || userData.id || userData._id;
+            setStudentId(resolvedStudentId);
             const blockchainProjectStats = await getStudentProjectsFromBlockchain(walletAddress);
             const projectMetadata = await getStudentProjects(studentId).catch(() => []);
             const requests = await getStudentRequests().catch(() => []);
 
             const [certs, apps, offers] = await Promise.all([
-                getStudentCertificates(studentId).catch(() => []),
+                getStudentCertificates(resolvedStudentId).catch(() => []),
                 getMyApplications().catch(() => []),
                 getMyOffers().catch(() => [])
             ]);
@@ -262,139 +265,14 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
-                    <div className="mb-6 flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500">Professional Profile</p>
-                            <h2 className={`mt-2 text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>On-chain portfolio</h2>
-                        </div>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className={`rounded-3xl border p-5 ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50"}`}>
-                            <h3 className="mb-4 text-lg font-semibold">Projects</h3>
-                            {projects.length === 0 ? (
-                                <p className="text-sm text-slate-400">No on-chain project records found for this wallet.</p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {projects.map((project) => (
-                                        <div key={project.hash} className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-[#0b1020]" : "border-slate-200 bg-white"}`}>
-                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                                <div>
-                                                    <p className="text-base font-semibold">{project.name || "Project"}</p>
-                                                    <p className="text-xs text-slate-500">{project.projectType || "Project"}</p>
-                                                </div>
-                                                <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${project.isVerified ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
-                                                    {project.isVerified ? "Verified" : "Registered"}
-                                                </span>
-                                            </div>
-                                            <div className="mt-3 grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
-                                                <p><span className="font-semibold text-slate-500">GitHub:</span> {project.githubLink ? <a href={project.githubLink} target="_blank" rel="noreferrer" className="text-violet-400 underline">{project.githubLink}</a> : "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Project ID:</span> <span className="font-mono text-[11px] text-slate-200">{formatHash(project.hash)}</span></p>
-                                                <p className="sm:col-span-2"><span className="font-semibold text-slate-500">Description:</span> {project.description || "No description provided."}</p>
-                                            </div>
-                                            <div className="mt-4 rounded-xl border border-slate-200/60 bg-white/60 p-3">
-                                                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Verification History</p>
-                                                {(project.verificationHistory || []).length === 0 ? (
-                                                    <p className="text-sm text-slate-400">No verification records yet for this project.</p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        {project.verificationHistory.map((entry, index) => (
-                                                            <div key={`${project.hash}-${index}`} className="rounded-xl border border-slate-200/60 p-3 text-xs text-slate-500">
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${entry.label === "VERIFIED" ? "bg-emerald-500/10 text-emerald-400" : entry.label === "PENDING" ? "bg-amber-500/10 text-amber-400" : entry.label === "REJECTED" ? "bg-rose-500/10 text-rose-400" : "bg-slate-500/10 text-slate-400"}`}>
-                                                                        {entry.label || "UNKNOWN"}
-                                                                    </span>
-                                                                </div>
-                                                                {entry.verifier && <p className="mt-2">Verified by: {entry.verifier}</p>}
-                                                                {entry.expectedVerifier && <p>Requested from: {entry.expectedVerifier}</p>}
-                                                                {entry.requestId && <p>Request ID: #{entry.requestId}</p>}
-                                                                {entry.wallet && <p>Wallet: {entry.wallet}</p>}
-                                                                {(entry.verifiedAt || entry.createdAt) && <p>Date: {new Date(Number(entry.verifiedAt || entry.createdAt) * 1000).toLocaleString()}</p>}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={`rounded-3xl border p-5 ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50"}`}>
-                            <h3 className="mb-4 text-lg font-semibold">Certificates</h3>
-                            {certificates.length === 0 ? (
-                                <p className="text-sm text-slate-400">No certificates available for this account.</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {certificates.map((certificate) => (
-                                        <div key={certificate._id || certificate.certificateHash} className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-[#0b1020]" : "border-slate-200 bg-white"}`}>
-                                            <div className="flex items-center justify-between gap-3">
-                                                <p className="text-sm font-semibold">{certificate.certificateName || "Certificate"}</p>
-                                                <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${certificate.verificationStatus === "Verified" ? "bg-emerald-500/10 text-emerald-400" : certificate.verificationStatus === "Rejected" ? "bg-rose-500/10 text-rose-400" : "bg-amber-500/10 text-amber-400"}`}>
-                                                    {certificate.verificationStatus || "Pending"}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
-                                                <p><span className="font-semibold text-slate-500">Issuer:</span> {certificate.issuer || "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Type:</span> {certificate.certificateType || "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Hash:</span> <span className="font-mono text-[10px]">{certificate.certificateHash ? `${certificate.certificateHash.slice(0, 12)}...` : "—"}</span></p>
-                                                <p><span className="font-semibold text-slate-500">Date:</span> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString() : "—"}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={`rounded-3xl border p-5 ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50"}`}>
-                            <h3 className="mb-4 text-lg font-semibold">Current Employment</h3>
-                            {employmentHistory.currentEmployment.length === 0 ? (
-                                <p className="text-sm text-slate-400">No active employment record on-chain.</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {employmentHistory.currentEmployment.map((record) => (
-                                        <div key={record.hash || record.employmentHash} className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-slate-500">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <p className="font-semibold text-slate-800">{record.organisation || "Organisation"}</p>
-                                                <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase text-emerald-400">{record.status || "ACTIVE"}</span>
-                                            </div>
-                                            <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
-                                                <p><span className="font-semibold text-slate-500">Type:</span> {record.employmentType || "Employment"}</p>
-                                                <p><span className="font-semibold text-slate-500">Offer ID:</span> {record.offerId ?? "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Started:</span> {record.joinedAt ? new Date(record.joinedAt * 1000).toLocaleDateString() : "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Status:</span> {record.active ? "Active" : "Inactive"}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className={`rounded-3xl border p-5 ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50"}`}>
-                            <h3 className="mb-4 text-lg font-semibold">Previous Employment</h3>
-                            {employmentHistory.previousEmployment.length === 0 ? (
-                                <p className="text-sm text-slate-400">No previous employment record on-chain.</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    {employmentHistory.previousEmployment.map((record) => (
-                                        <div key={record.hash || record.employmentHash} className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4 text-sm text-slate-500">
-                                            <p className="font-semibold text-slate-800">{record.organisation || "Organisation"}</p>
-                                            <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
-                                                <p><span className="font-semibold text-slate-500">Type:</span> {record.employmentType || "Employment"}</p>
-                                                <p><span className="font-semibold text-slate-500">Offer ID:</span> {record.offerId ?? "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Started:</span> {record.joinedAt ? new Date(record.joinedAt * 1000).toLocaleDateString() : "—"}</p>
-                                                <p><span className="font-semibold text-slate-500">Ended:</span> {record.endedAt ? new Date(record.endedAt * 1000).toLocaleDateString() : "—"}</p>
-                                                <p className="sm:col-span-2"><span className="font-semibold text-slate-500">Final status:</span> {record.status || "TERMINATED"}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <ProfessionalProfile
+                    walletAddress={user?.walletAddress || localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "{}").walletAddress : ""}
+                    studentId={studentId}
+                    studentName={user?.name}
+                    studentEmail={user?.email}
+                    darkMode={darkMode}
+                    subtitle="On-chain portfolio"
+                />
 
                 <div className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
                     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">

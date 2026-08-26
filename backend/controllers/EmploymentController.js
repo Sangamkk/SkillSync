@@ -467,6 +467,35 @@ export const getMyEmployment = async (req, res) => {
   }
 };
 
+export const getStudentEmploymentMetadata = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const application = await Application.findOne({
+      student: studentId,
+      organisation: req.user.userId,
+    }).select("_id").lean();
+
+    if (!application) {
+      return res.status(403).json({
+        message: "You are not allowed to view this candidate's employment.",
+      });
+    }
+
+    const records = await Employment.find({ student: studentId })
+      .populate("job", "title description employmentType location stipend requiredSkills")
+      .lean();
+
+    const resolved = await Promise.all(records.map(async (record) => {
+      const organisation = await resolveOrganisationDisplay(record.organisation);
+      return { ...record, organisation };
+    }));
+
+    res.status(200).json({ records: resolved });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getOrganisationEmployees =
   async (req, res) => {
     try {

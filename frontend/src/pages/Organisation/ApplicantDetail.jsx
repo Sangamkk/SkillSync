@@ -132,7 +132,10 @@ function ApplicantDetail() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">Applicant Review</p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">{student?.name || "Applicant"}</h1>
             </div>
-            <Link to={`/organisation/jobs/${jobId}/applications`} className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/20">← Back to Applicants</Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to={`/organisation/jobs/${jobId}/applications/${applicationId}/profile`} className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:opacity-95">View Candidate Profile →</Link>
+              <Link to={`/organisation/jobs/${jobId}/applications`} className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/20">← Back to Applicants</Link>
+            </div>
           </div>
         </div>
 

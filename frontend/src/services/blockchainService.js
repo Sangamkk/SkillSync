@@ -140,25 +140,27 @@ export const getStudentEmploymentOnChain = async (walletAddress) => {
     const employmentContract = await getEmploymentContract();
 
     const hashes = await applicantContract.getEmployments(normalizedAddress).catch(() => []);
-    const offerIds = await employmentContract.getStudentOffers().catch(() => []);
+    const nextOfferId = Number(await employmentContract.nextOfferId().catch(() => 0));
+    const offerIds = Array.from({ length: nextOfferId }, (_, index) => index + 1);
 
     const offerMap = new Map();
     for (const offerId of offerIds) {
       const offer = await employmentContract.offers(offerId);
-      offerMap.set(offer.employmentHash, {
+      if (offer.student.toLowerCase() !== normalizedAddress.toLowerCase()) continue;
+      offerMap.set(offer.employmentHash.toString().toLowerCase(), {
         id: Number(offer.id),
         status: Number(offer.status),
         active: Boolean(offer.active),
         employmentType: Number(offer.employmentType) === 0 ? "Internship" : "Employment",
         organisation: offer.organisation,
-        employmentHash: offer.employmentHash
+        employmentHash: offer.employmentHash.toString()
       });
     }
 
     const records = await Promise.all(
       (hashes || []).map(async (hash) => {
         const employment = await applicantContract.employments(hash);
-        const offerData = offerMap.get(hash.toString()) || offerMap.get(hash);
+        const offerData = offerMap.get(hash.toString().toLowerCase());
         const isActive = await applicantContract.isEmploymentActive(hash).catch(() => Boolean(employment.endedAt === 0n));
 
         return {
@@ -314,4 +316,30 @@ export const terminateEmployment = async (offerId) => {
   const tx = await contract.endEmployment(offerId);
   await tx.wait();
   return tx.hash;
+};
+
+export const getStudentCertificatesOnChain = async (walletAddress) => {
+  if (!walletAddress) return [];
+
+  try {
+    const normalizedAddress = ethers.getAddress(walletAddress);
+    const contract = getReadOnlyApplicantManagerContract();
+    const hashes = await contract.getCertificates(normalizedAddress);
+
+    return Promise.all((hashes || []).map(async (hash) => {
+      const certificate = await contract.certificates(hash);
+      return {
+        certificateHash: hash.toString(),
+        credentialType: Number(certificate.credentialType),
+        issuer: certificate.issuer,
+        issuedAt: Number(certificate.issuedAt),
+        expiresAt: Number(certificate.expiresAt),
+        revoked: Boolean(certificate.revoked),
+        onChainVerified: true
+      };
+    }));
+  } catch (error) {
+    console.error("Student certificate fetch failed:", error);
+    return [];
+  }
 };

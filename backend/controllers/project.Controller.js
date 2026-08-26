@@ -4,6 +4,7 @@ import {
     getStudentProjectsService,
     updateProjectStatusService
 } from "../services/createProjectService.js";
+import Application from "../models/Application.js";
 
 export const createProject = async (req, res) => {
     try {
@@ -104,6 +105,32 @@ export const updateProjectStatus = async (req, res) => {
         return res.status(error.statusCode || 500).json({
             success: false,
             message: error.message || "Failed to update project status"
+        });
+    }
+};
+
+export const getCandidateProjects = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const application = await Application.findOne({
+            student: studentId,
+            organisation: req.user.userId,
+        }).select("_id").lean();
+
+        if (!application) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not allowed to view this candidate's projects",
+            });
+        }
+
+        const projects = await getStudentProjectsService(studentId);
+        return res.status(200).json({ success: true, projects: projects || [] });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to fetch candidate projects",
+            projects: [],
         });
     }
 };

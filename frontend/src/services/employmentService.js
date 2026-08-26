@@ -93,6 +93,11 @@ export const getMyEmployment = async () => {
   return response.data;
 };
 
+export const getStudentEmploymentById = async (studentId) => {
+  const response = await api.get(`/employment/students/${studentId}`);
+  return response.data;
+};
+
 export const acceptOffer = async (offerId) => {
   const response = await api.post(
     `/employment/offers/${offerId}/accept`

@@ -7,6 +7,7 @@ import {
     createProject,
     getPendingProjects,
     getStudentProjects,
+    getCandidateProjects,
     updateProjectStatus
 } from "../controllers/project.Controller.js";
 
@@ -15,6 +16,7 @@ router.get("/profile", authenticate, authorizeRoles("STUDENT"), getProfile);
 
 router.post("/projects", authenticate, authorizeRoles("STUDENT"), createProject);
 router.get("/projects", authenticate, authorizeRoles("STUDENT"), getStudentProjects);
+router.get("/candidates/:studentId/projects", authenticate, authorizeRoles("ORGANISATION"), getCandidateProjects);
 router.get("/projects/pending", authenticate, authorizeRoles("ORGANISATION", "ADMIN"), getPendingProjects);
 router.put("/projects/status", authenticate, authorizeRoles("STUDENT", "ORGANISATION", "ADMIN"), updateProjectStatus);
 

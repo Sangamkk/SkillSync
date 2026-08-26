@@ -333,28 +333,28 @@ const UploadCertificate = () => {
                                     Select Credential Type
                                 </option>
 
-                                <option value="Certificate">
-                                    Certificate
-                                </option>
-
-                                <option value="Project">
-                                    Project
+                                <option value="Course">
+                                    Course
                                 </option>
 
                                 <option value="Internship">
                                     Internship
                                 </option>
 
+                                <option value="Workshop">
+                                    Workshop
+                                </option>
+
                                 <option value="Hackathon">
                                     Hackathon
                                 </option>
 
-                                <option value="ResearchPaper">
-                                    Research Paper
+                                <option value="Competition">
+                                    Competition
                                 </option>
 
-                                <option value="Patent">
-                                    Patent
+                                <option value="Professional">
+                                    Professional
                                 </option>
 
                             </select>
@@ -605,7 +605,7 @@ const UploadCertificate = () => {
 
                                 <input
                                     type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    accept=".pdf,application/pdf"
                                     onChange={handleFileChange}
                                     className={`mt-5 w-full rounded-xl border px-4 py-3 text-sm ${darkMode
                                         ? "border-white/10 bg-white/[0.04] text-slate-300"
