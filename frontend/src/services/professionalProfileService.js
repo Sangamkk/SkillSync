@@ -213,6 +213,7 @@ export const loadProfessionalProfile = async ({ walletAddress, studentId, viewer
       certificates.push({
         ...certificate,
         onChainVerified: false,
+        issuerWallet: latestRequest?.expectedVerifier || certificate.issuerWallet || "",
         verificationStatus: latestRequest?.status === "REJECTED"
           ? "Rejected"
           : latestRequest?.status === "VERIFIED"

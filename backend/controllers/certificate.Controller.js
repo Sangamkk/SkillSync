@@ -1,7 +1,8 @@
 import {
     uploadCertificateService,
     getStudentCertificatesService,
-    getCertificateByHashService
+    getCertificateByHashService,
+    updateCertificateStatusService
 } from "../services/certificate.services.js";
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";

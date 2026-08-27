@@ -12,6 +12,7 @@ import {
 } from "../services/certificateService";
 import { getPendingProjects } from "../services/projectService";
 import { getMyJobs, getOrganisationEmployees } from "../services/employmentService";
+import { CredentialType, RequestType } from "../utils/enums";
 import MeshBackground from "../components/common/MeshBackground";
 import { Link } from "react-router-dom";
 
@@ -81,6 +82,10 @@ const OrganisationRequests = () => {
             for (const request of blockchainRequests) {
                 console.log("Request:", request);
 
+                if (Number(request.credentialType) !== CredentialType.Certificate) {
+                    continue;
+                }
+
                 try {
                     const certificate = await getCertificateByHash(
                         request.credentialHash
@@ -109,7 +114,7 @@ const OrganisationRequests = () => {
     };
 
     const handleViewCertificate = async (certificateHash) => {
-        const documentWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+        const documentWindow = window.open("about:blank", "_blank");
         console.log("Certificate document window:", { isNull: documentWindow === null });
 
         if (!documentWindow) {
@@ -117,9 +122,11 @@ const OrganisationRequests = () => {
             return;
         }
 
+        documentWindow.opener = null;
+
         try {
             const documentUrl = await getCertificateDocument(certificateHash);
-            documentWindow.location.replace(documentUrl);
+            documentWindow.location.href = documentUrl;
         } catch (error) {
             console.error("Error loading certificate document:", error);
             documentWindow.close();
@@ -540,7 +547,12 @@ const OrganisationRequests = () => {
                                 </button>
 
                                 {/* ACTION BUTTONS */}
-                                {item.request.status === 0 && item.certificate.verificationStatus !== "Verified" && item.certificate.verificationStatus !== "Rejected" && (
+                                {Number(item.request.credentialType) === CredentialType.Certificate &&
+                                    Number(item.request.requestType) === RequestType.AddCertificate &&
+                                    Number(item.request.status) === 0 &&
+                                    item.certificate.verificationStatus !== "Verified" &&
+                                    item.certificate.verificationStatus !== "Rejected" &&
+                                    item.certificate.verificationStatus !== "Cancelled" && (
                                     <div className="mt-4 flex gap-3">
                                         <button
                                             disabled={processingId === item.request.id.toString()}
