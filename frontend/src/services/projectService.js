@@ -6,8 +6,28 @@ export const createProject = async (data) => {
 };
 
 export const getPendingProjects = async () => {
-    console.log("Starting")
-    const response = await api.get( "/student/projects/pending" );
-    console.log(response)
+    const response = await api.get("/student/projects/pending");
     return response.data.projects;
+};
+
+export const getStudentProjects = async (studentId) => {
+    const url = studentId ? `/student/projects?studentId=${studentId}` : "/student/projects";
+    const response = await api.get(url);
+    return response.data.projects || response.data || [];
+};
+
+export const getCandidateProjects = async (studentId) => {
+    const response = await api.get(`/student/candidates/${studentId}/projects`);
+    return response.data.projects || [];
+};
+
+export const updateProjectStatus = async (id, status, txHash, rejectionReason, extraData = {}) => {
+    const response = await api.put("/student/projects/status", {
+        id,
+        status,
+        txHash,
+        rejectionReason,
+        ...extraData
+    });
+    return response.data;
 };

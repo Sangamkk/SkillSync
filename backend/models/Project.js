@@ -34,12 +34,16 @@ const projectSchema = new mongoose.Schema(
 
         issuer: {
             type: String,
-            required: true
+            default: ""
         },
 
         issuerWallet: {
             type: String,
-            required: true
+            default: ""
+        },
+        onChainRegistered: {
+            type: Boolean,
+            default: false
         },
 
         description: {
@@ -50,6 +54,14 @@ const projectSchema = new mongoose.Schema(
             type: String,
             enum: ["PENDING", "APPROVED", "REJECTED"],
             default: "PENDING"
+        },
+        txHash: {
+            type: String,
+            default: ""
+        },
+        rejectionReason: {
+            type: String,
+            default: ""
         }
     },
     {

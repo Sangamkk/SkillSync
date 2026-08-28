@@ -5,11 +5,21 @@ export const getAllJobs = async () => {
   return response.data;
 };
 
+export const getJobById = async (jobId) => {
+  const response = await api.get(`/employment/jobs/${jobId}`);
+  return response.data;
+};
+
 export const applyToJob = async (jobId) => {
   const response = await api.post(
     `/employment/jobs/${jobId}/apply`
   );
 
+  return response.data;
+};
+
+export const getMyApplications = async () => {
+  const response = await api.get("/employment/applications/my");
   return response.data;
 };
 
@@ -44,6 +54,14 @@ export const getApplicants = async (jobId) => {
   return response.data;
 };
 
+export const getApplicantDetail = async (jobId, applicationId) => {
+  const response = await api.get(
+    `/employment/jobs/${jobId}/applications/${applicationId}`
+  );
+
+  return response.data;
+};
+
 export const createEmploymentOffer = async (
   applicationId,
   offerId,
@@ -67,6 +85,16 @@ export const getMyOffers = async () => {
     "/employment/offers"
   );
 
+  return response.data;
+};
+
+export const getMyEmployment = async () => {
+  const response = await api.get("/employment/my");
+  return response.data;
+};
+
+export const getStudentEmploymentById = async (studentId) => {
+  const response = await api.get(`/employment/students/${studentId}`);
   return response.data;
 };
 

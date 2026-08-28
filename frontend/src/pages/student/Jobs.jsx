@@ -1,57 +1,63 @@
 import { useEffect, useState } from "react";
-import { getAllJobs, applyToJob } from "../../services/employmentService";
+import { Link } from "react-router-dom";
+import { getAllJobs, applyToJob, getMyApplications } from "../../services/employmentService";
 import MeshBackground from "../../components/common/MeshBackground";
 
 function Jobs() {
 
     const [jobs, setJobs] = useState([]);
+    const [appliedJobIds, setAppliedJobIds] = useState(new Set());
     const [loading, setLoading] = useState(true);
+    const [applyingId, setApplyingId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
-
     useEffect(() => {
-        fetchJobs();
+        fetchJobsAndApplications();
     }, []);
 
-
-    async function fetchJobs() {
-
+    async function fetchJobsAndApplications() {
         try {
+            const [allJobs, myApps] = await Promise.all([
+                getAllJobs().catch(() => []),
+                getMyApplications().catch(() => [])
+            ]);
 
-            const jobs = await getAllJobs();
+            setJobs(allJobs || []);
 
-            setJobs(jobs);
-
+            const appliedSet = new Set(
+                (myApps || []).map((app) => (typeof app.job === "object" ? app.job._id : app.job))
+            );
+            setAppliedJobIds(appliedSet);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Fetch jobs error:", err);
         } finally {
-
             setLoading(false);
-
         }
-
     }
 
-
     async function handleApply(jobId) {
+        setApplyingId(jobId);
+        setStatusMessage({ id: jobId, text: "Submitting application...", type: "info" });
 
         try {
-
             await applyToJob(jobId);
+            setAppliedJobIds((prev) => new Set([...prev, jobId]));
+            setStatusMessage({ id: jobId, text: "✓ Application submitted successfully!", type: "success" });
 
-            alert("Applied Successfully");
-
+            setTimeout(() => {
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 2500);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Apply error:", err);
+            const errMsg = err.response?.data?.message || err.message || "Failed to submit application";
+            setStatusMessage({ id: jobId, text: `❌ ${errMsg}`, type: "error" });
+        } finally {
+            setApplyingId(null);
         }
-
     }
 
 
@@ -329,16 +335,50 @@ function Jobs() {
                                 />
 
 
-                                {/* ================= APPLY ================= */}
+                                {/* ================= STATUS BANNER ================= */}
+                                {statusMessage.id === job._id && statusMessage.text && (
+                                    <div
+                                        className={`mb-4 rounded-xl p-3 text-xs font-medium ${
+                                            statusMessage.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : statusMessage.type === "error"
+                                                ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                                : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                        }`}
+                                    >
+                                        {statusMessage.text}
+                                    </div>
+                                )}
 
-                                <button
-                                    onClick={() =>
-                                        handleApply(job._id)
-                                    }
-                                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30"
-                                >
-                                    Apply Now →
-                                </button>
+                                {/* ================= ACTIONS ================= */}
+
+                                <div className="mt-6 flex gap-3">
+                                    <Link
+                                        to={`/student/jobs/${job._id}`}
+                                        className="flex-1 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-center text-xs font-semibold text-violet-300 transition hover:bg-violet-500/20"
+                                    >
+                                        View Details
+                                    </Link>
+
+                                    {appliedJobIds.has(job._id) ? (
+                                        <button
+                                            disabled
+                                            className="flex-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-3 font-semibold text-emerald-400 cursor-default"
+                                        >
+                                            ✓ Applied
+                                        </button>
+                                    ) : (
+                                        <button
+                                            disabled={applyingId === job._id}
+                                            onClick={() => handleApply(job._id)}
+                                            className={`flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 ${
+                                                applyingId === job._id ? "cursor-not-allowed opacity-60" : ""
+                                            }`}
+                                        >
+                                            {applyingId === job._id ? "Submitting..." : "Apply Now"}
+                                        </button>
+                                    )}
+                                </div>
 
                             </div>
 

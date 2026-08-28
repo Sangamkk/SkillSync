@@ -20,190 +20,136 @@ const UploadCertificate = () => {
     const [organisations, setOrganisations] = useState([]);
     const [selectedIssuerWallet, setSelectedIssuerWallet] = useState("");
     const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
-
     useEffect(() => {
-
         const loadOrganisations = async () => {
-
             try {
-
-                const data =
-                    await getVerifiedOrganisations();
-
-                setOrganisations(data);
-
+                const data = await getVerifiedOrganisations();
+                setOrganisations(data || []);
             } catch (error) {
-
-                console.log(error);
-
+                console.error("Failed to load organisations:", error);
             }
-
         };
 
         loadOrganisations();
-
     }, []);
 
-
     const handleChange = (e) => {
-
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
         });
-
     };
 
-
     const handleIssuerChange = (e) => {
-
         const wallet = e.target.value;
-
         setSelectedIssuerWallet(wallet);
 
-        const organisation =
-            organisations.find(
-                (org) => org.walletAddress === wallet
-            );
+        const organisation = organisations.find(
+            (org) => org.walletAddress === wallet
+        );
 
         setFormData({
             ...formData,
-            issuer:
-                organisation?.organisationName || "",
+            issuer: organisation?.organisationName || "",
         });
-
     };
-
 
     const handleFileChange = (e) => {
-
         setFile(e.target.files[0]);
-
     };
 
-
     const handleSubmit = async (e) => {
-
         e.preventDefault();
+        setStatusMessage({ type: "", text: "" });
 
         let expiry = 0;
-
-        if (
-            formData.hasExpiry === "yes" &&
-            formData.expiryDate
-        ) {
-
-            expiry = Math.floor(
-                new Date(
-                    formData.expiryDate
-                ).getTime() / 1000
-            );
-
+        if (formData.hasExpiry === "yes" && formData.expiryDate) {
+            expiry = Math.floor(new Date(formData.expiryDate).getTime() / 1000);
         }
-
 
         if (!file) {
-
-            alert("Please select a certificate.");
-
+            setStatusMessage({ type: "error", text: "Please select a certificate file." });
             return;
-
         }
-
 
         if (!selectedIssuerWallet) {
-
-            alert("Please select an issuer.");
-
+            setStatusMessage({ type: "error", text: "Please select an issuing organisation." });
             return;
-
         }
 
-
+        setLoading(true);
         try {
-
-            const user =
-                JSON.parse(
-                    localStorage.getItem("user")
-                );
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
 
             const data = new FormData();
-
             data.append("student", user._id);
-            data.append(
-                "certificateName",
-                formData.certificateName
-            );
-            data.append(
-                "issuer",
-                formData.issuer
-            );
-            data.append(
-                "certificateType",
-                formData.certificateType
-            );
-            data.append(
-                "issueDate",
-                formData.issueDate
-            );
-            data.append(
-                "expiryDate",
-                formData.expiryDate || ""
-            );
-            data.append(
-                "description",
-                formData.description
-            );
-            data.append(
-                "certificate",
-                file
-            );
-            data.append(
-                "hasExpiry",
-                formData.hasExpiry === "yes"
-            );
+            data.append("certificateName", formData.certificateName);
+            data.append("issuer", formData.issuer);
+            data.append("certificateType", formData.certificateType);
+            data.append("issueDate", formData.issueDate);
+            data.append("expiryDate", formData.expiryDate || "");
+            data.append("description", formData.description);
+            data.append("certificate", file);
+            data.append("hasExpiry", formData.hasExpiry === "yes");
 
-
+            setStatusMessage({ type: "info", text: "Uploading certificate to Cloudinary and generating SHA-256 hash..." });
             const response = await uploadCertificate(data);
-
-            alert(response.message);
-
-            console.log(response.certificate);
-
+            console.log("Certificate uploaded:", response.certificate);
 
             try {
-
                 const hash = response.hashBytes32;
+                setStatusMessage({ type: "info", text: "Prompting MetaMask to create on-chain verification request..." });
 
                 const txHash = await createVerificationRequest(
-                        hash,
-                        CredentialType.Certificate,
-                        RequestType.AddCertificate,
-                        selectedIssuerWallet,
-                        formData.hasExpiry
-                    );
-
-                console.log(txHash);
-                alert( "Verification Request Created Successfully" );
-            } catch (error) {
-                console.log(error);
-                alert(
-                    error.shortMessage ||
-                    error.reason ||
-                    error.message
+                    hash,
+                    CredentialType.Certificate,
+                    RequestType.AddCertificate,
+                    selectedIssuerWallet,
+                    expiry
                 );
+
+                console.log("Verification request tx:", txHash);
+                setStatusMessage({
+                    type: "success",
+                    text: `✓ Certificate uploaded and verification request created on-chain! Tx: ${txHash.slice(0, 16)}...`
+                });
+
+                // Reset form
+                setFormData({
+                    certificateName: "",
+                    issuer: "",
+                    certificateType: "",
+                    issueDate: "",
+                    expiryDate: "",
+                    description: "",
+                    hasExpiry: "",
+                });
+                setSelectedIssuerWallet("");
+                setFile(null);
+
+            } catch (blockchainError) {
+                console.error("Blockchain error:", blockchainError);
+                const errMsg = blockchainError.shortMessage || blockchainError.reason || blockchainError.message || "Blockchain transaction failed";
+                setStatusMessage({
+                    type: "error",
+                    text: `Certificate uploaded off-chain, but on-chain request failed: ${errMsg}`
+                });
             }
         } catch (error) {
-            console.log(error);
-            alert(
-                error.response?.data?.message ||
-                "Upload Failed"
-            );
+            console.error("Upload error:", error);
+            setStatusMessage({
+                type: "error",
+                text: error.response?.data?.message || error.message || "Upload Failed"
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -387,28 +333,28 @@ const UploadCertificate = () => {
                                     Select Credential Type
                                 </option>
 
-                                <option value="Certificate">
-                                    Certificate
-                                </option>
-
-                                <option value="Project">
-                                    Project
+                                <option value="Course">
+                                    Course
                                 </option>
 
                                 <option value="Internship">
                                     Internship
                                 </option>
 
+                                <option value="Workshop">
+                                    Workshop
+                                </option>
+
                                 <option value="Hackathon">
                                     Hackathon
                                 </option>
 
-                                <option value="ResearchPaper">
-                                    Research Paper
+                                <option value="Competition">
+                                    Competition
                                 </option>
 
-                                <option value="Patent">
-                                    Patent
+                                <option value="Professional">
+                                    Professional
                                 </option>
 
                             </select>
@@ -659,7 +605,7 @@ const UploadCertificate = () => {
 
                                 <input
                                     type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    accept=".pdf,application/pdf"
                                     onChange={handleFileChange}
                                     className={`mt-5 w-full rounded-xl border px-4 py-3 text-sm ${darkMode
                                         ? "border-white/10 bg-white/[0.04] text-slate-300"
@@ -687,6 +633,21 @@ const UploadCertificate = () => {
                         </div>
 
 
+                        {/* ================= STATUS BANNER ================= */}
+                        {statusMessage.text && (
+                            <div
+                                className={`rounded-2xl p-4 text-sm font-medium ${
+                                    statusMessage.type === "success"
+                                        ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                        : statusMessage.type === "error"
+                                        ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                        : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                }`}
+                            >
+                                {statusMessage.text}
+                            </div>
+                        )}
+
                         {/* ================= SUBMIT ================= */}
 
                         <div
@@ -698,14 +659,17 @@ const UploadCertificate = () => {
 
                             <button
                                 type="submit"
-                                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30"
+                                disabled={loading}
+                                className={`w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 ${
+                                    loading ? "cursor-not-allowed opacity-60" : ""
+                                }`}
                             >
-                                Upload Certificate
+                                {loading ? "Uploading & Creating On-Chain Request..." : "Upload Certificate & Request Verification →"}
                             </button>
 
                             <p className="mt-3 text-center text-xs text-slate-500">
                                 Your credential will be submitted for
-                                organisation verification.
+                                on-chain organisation verification.
                             </p>
 
                         </div>

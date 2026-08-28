@@ -14,7 +14,23 @@ const RegisterOrganisation = () => {
         organisationType: "Company",
     });
 
+    const [details, setDetails] = useState({
+        industry: "",
+        website: "",
+        institutionCode: "",
+        affiliation: "",
+        researchArea: "",
+        parentInstitution: "",
+        focusArea: "",
+        registrationAuthority: "",
+        department: "",
+        jurisdiction: "",
+        description: ""
+    });
+
     const [walletAddress, setWalletAddress] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState({ type: "", text: "" });
 
     const handleChange = (e) => {
         setFormData({
@@ -23,10 +39,17 @@ const RegisterOrganisation = () => {
         });
     };
 
+    const handleDetailsChange = (e) => {
+        setDetails({
+            ...details,
+            [e.target.name]: e.target.value
+        });
+    };
+
     const connectWallet = async () => {
         try {
             if (!window.ethereum) {
-                alert("Please install MetaMask");
+                setMessage({ type: "error", text: "Please install MetaMask" });
                 return;
             }
 
@@ -35,27 +58,74 @@ const RegisterOrganisation = () => {
             });
 
             setWalletAddress(accounts[0]);
+            setMessage({ type: "success", text: "MetaMask wallet connected successfully!" });
         } catch (error) {
-            console.log(error);
-            alert("Failed to connect MetaMask");
+            console.error(error);
+            setMessage({ type: "error", text: error.message || "Failed to connect MetaMask" });
         }
+    };
+
+    const validateForm = () => {
+        if (!formData.organisationName.trim()) return "Organization Name is required";
+        if (!formData.email.trim()) return "Official Email is required";
+        if (!formData.registrationNumber.trim()) return "Registration Number is required";
+        if (!walletAddress) return "Please connect your MetaMask wallet";
+
+        // Type specific validation
+        switch (formData.organisationType) {
+            case "Company":
+                if (!details.industry.trim()) return "Industry is required for Company";
+                if (!details.website.trim()) return "Website is required for Company";
+                break;
+            case "University":
+                if (!details.institutionCode.trim()) return "Institution Code is required";
+                if (!details.affiliation.trim()) return "Affiliation is required";
+                if (!details.website.trim()) return "Website is required";
+                break;
+            case "ResearchLab":
+                if (!details.researchArea.trim()) return "Research Area is required";
+                if (!details.parentInstitution.trim()) return "Parent Institution is required";
+                if (!details.website.trim()) return "Website is required";
+                break;
+            case "NGO":
+                if (!details.focusArea.trim()) return "Focus Area is required";
+                if (!details.registrationAuthority.trim()) return "Registration Authority is required";
+                if (!details.website.trim()) return "Website is required";
+                break;
+            case "Government":
+                if (!details.department.trim()) return "Department is required";
+                if (!details.jurisdiction.trim()) return "Jurisdiction is required";
+                if (!details.website.trim()) return "Website is required";
+                break;
+            case "Other":
+                if (!details.description.trim()) return "Description is required";
+                if (!details.website.trim()) return "Website is required";
+                break;
+            default:
+                break;
+        }
+        return null;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage({ type: "", text: "" });
 
-        if (!walletAddress) {
-            alert("Connect MetaMask First");
+        const validationError = validateForm();
+        if (validationError) {
+            setMessage({ type: "error", text: validationError });
             return;
         }
 
+        setLoading(true);
         try {
             const response = await applyOrganisation({
                 ...formData,
+                details,
                 walletAddress,
             });
 
-            alert(response.message);
+            setMessage({ type: "success", text: response.message || "Application submitted successfully! Awaiting Admin review." });
 
             setFormData({
                 organisationName: "",
@@ -63,14 +133,28 @@ const RegisterOrganisation = () => {
                 registrationNumber: "",
                 organisationType: "Company",
             });
-
+            setDetails({
+                industry: "",
+                website: "",
+                institutionCode: "",
+                affiliation: "",
+                researchArea: "",
+                parentInstitution: "",
+                focusArea: "",
+                registrationAuthority: "",
+                department: "",
+                jurisdiction: "",
+                description: ""
+            });
             setWalletAddress("");
         } catch (error) {
-            console.log(error);
-            alert(
-                error.response?.data?.message ||
-                "Application Failed"
-            );
+            console.error(error);
+            setMessage({
+                type: "error",
+                text: error.response?.data?.message || error.message || "Application Failed"
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -467,16 +551,323 @@ const RegisterOrganisation = () => {
                                         }`}
                                     >
 
-                                        <option>Company</option>
-                                        <option>University</option>
-                                        <option>ResearchLab</option>
-                                        <option>NGO</option>
-                                        <option>Government</option>
-                                        <option>Other</option>
+                                        <option value="Company">Company</option>
+                                        <option value="University">University</option>
+                                        <option value="ResearchLab">Research Lab</option>
+                                        <option value="NGO">NGO</option>
+                                        <option value="Government">Government</option>
+                                        <option value="Other">Other</option>
 
                                     </select>
 
                                 </div>
+
+
+                                {/* ================= DYNAMIC TYPE-SPECIFIC DETAILS ================= */}
+
+                                {formData.organisationType === "Company" && (
+                                    <div className="space-y-4 rounded-2xl border border-violet-500/20 bg-violet-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                                            Company Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Industry *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="industry"
+                                                value={details.industry}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. Information Technology, FinTech"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://example.com"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.organisationType === "University" && (
+                                    <div className="space-y-4 rounded-2xl border border-blue-500/20 bg-blue-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-blue-400">
+                                            University Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Institution Code *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="institutionCode"
+                                                value={details.institutionCode}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. UNIV-9821"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Affiliation *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="affiliation"
+                                                value={details.affiliation}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. State University Board / UGC"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://university.edu"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.organisationType === "ResearchLab" && (
+                                    <div className="space-y-4 rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-400">
+                                            Research Lab Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Research Area *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="researchArea"
+                                                value={details.researchArea}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. Quantum Computing, AI Ethics"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Parent Institution *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="parentInstitution"
+                                                value={details.parentInstitution}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. National Science Foundation"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://lab.org"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.organisationType === "NGO" && (
+                                    <div className="space-y-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                                            NGO Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Focus Area *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="focusArea"
+                                                value={details.focusArea}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. Education, Sustainability"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Registration Authority *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="registrationAuthority"
+                                                value={details.registrationAuthority}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. Charity Commissioner"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://ngo.org"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.organisationType === "Government" && (
+                                    <div className="space-y-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                                            Government Department Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Department *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="department"
+                                                value={details.department}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. Ministry of Higher Education"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Jurisdiction *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="jurisdiction"
+                                                value={details.jurisdiction}
+                                                onChange={handleDetailsChange}
+                                                placeholder="e.g. National / State"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://gov.in"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {formData.organisationType === "Other" && (
+                                    <div className="space-y-4 rounded-2xl border border-slate-500/20 bg-slate-500/[0.03] p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                            Organisation Details
+                                        </p>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Description *
+                                            </label>
+                                            <textarea
+                                                name="description"
+                                                value={details.description}
+                                                onChange={handleDetailsChange}
+                                                placeholder="Describe the nature of your organisation..."
+                                                rows={3}
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={`mb-1 block text-xs font-medium ${darkMode ? "text-slate-300" : "text-slate-700"}`}>
+                                                Website *
+                                            </label>
+                                            <input
+                                                type="url"
+                                                name="website"
+                                                value={details.website}
+                                                onChange={handleDetailsChange}
+                                                placeholder="https://example.org"
+                                                required
+                                                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
+                                                    darkMode ? "border-white/10 bg-white/[0.05] text-white" : "border-slate-200 bg-white text-slate-900"
+                                                }`}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
 
                                 {/* WALLET SECTION */}
@@ -566,14 +957,30 @@ const RegisterOrganisation = () => {
 
                                 </div>
 
+                                {/* ALERT MESSAGE BANNER */}
+                                {message.text && (
+                                    <div
+                                        className={`rounded-2xl p-4 text-sm font-medium ${
+                                            message.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : "border border-red-500/30 bg-red-500/10 text-red-400"
+                                        }`}
+                                    >
+                                        {message.text}
+                                    </div>
+                                )}
+
 
                                 {/* SUBMIT */}
 
                                 <button
                                     type="submit"
-                                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30"
+                                    disabled={loading}
+                                    className={`w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30 ${
+                                        loading ? "cursor-not-allowed opacity-60" : ""
+                                    }`}
                                 >
-                                    Submit Application →
+                                    {loading ? "Submitting Application..." : "Submit Application →"}
                                 </button>
 
 

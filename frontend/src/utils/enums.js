@@ -20,3 +20,12 @@ export const EmploymentType = {
     Internship: 0,
     Employment: 1
 };
+
+export const OrganizationType = {
+    Company: 0,
+    University: 1,
+    ResearchLab: 2,
+    NGO: 3,
+    Government: 4,
+    Other: 5
+};

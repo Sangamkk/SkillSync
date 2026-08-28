@@ -15,55 +15,59 @@ import MeshBackground from "../../components/common/MeshBackground";
 function Employees() {
 
     const [employees, setEmployees] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [terminatingId, setTerminatingId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
-
     useEffect(() => {
         fetchEmployees();
     }, []);
 
-
     async function fetchEmployees() {
-
+        setLoading(true);
         try {
-
             const data = await getOrganisationEmployees();
-
-            setEmployees(data);
-
+            setEmployees(data || []);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Error fetching employees:", err);
+        } finally {
+            setLoading(false);
         }
-
     }
 
-
     async function handleTerminate(offerId) {
+        const confirmTerminate = window.confirm("Are you sure you want to terminate this employment on-chain?");
+        if (!confirmTerminate) return;
+
+        setTerminatingId(offerId);
+        setStatusMessage({ id: offerId, text: "Prompting MetaMask transaction to terminate employment...", type: "info" });
 
         try {
+            // Step 1: Blockchain termination
+            setStatusMessage({ id: offerId, text: "Waiting for on-chain confirmation...", type: "info" });
+            const txHash = await terminateEmploymentOnChain(offerId);
 
-            // Blockchain
-            await terminateEmploymentOnChain(offerId);
-
-            // MongoDB / Backend
+            // Step 2: MongoDB / Backend
+            setStatusMessage({ id: offerId, text: "Updating database status...", type: "info" });
             await terminateEmployment(offerId);
 
-            // Refresh employees
-            await fetchEmployees();
+            setStatusMessage({ id: offerId, text: `✓ Employment Terminated. Tx: ${txHash ? txHash.slice(0, 14) : ""}...`, type: "success" });
 
-            alert("Employment Terminated");
-
+            setTimeout(() => {
+                fetchEmployees();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1500);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Termination error:", err);
+            const errMsg = err.shortMessage || err.reason || err.message || "Termination failed";
+            setStatusMessage({ id: offerId, text: `❌ ${errMsg}`, type: "error" });
+        } finally {
+            setTerminatingId(null);
         }
-
     }
 
 
@@ -332,21 +336,39 @@ function Employees() {
 
                                 </div>
 
+                                {/* STATUS MESSAGE */}
+                                {statusMessage.id === emp.offerId && statusMessage.text && (
+                                    <div
+                                        className={`mt-4 rounded-xl p-3 text-xs font-medium ${
+                                            statusMessage.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : statusMessage.type === "error"
+                                                ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                                : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                        }`}
+                                    >
+                                        {statusMessage.text}
+                                    </div>
+                                )}
+
 
                                 {/* ================= TERMINATE ================= */}
 
-                                <button
-                                    className={`mt-5 w-full rounded-xl border py-3 font-semibold transition-all duration-300 ${
-                                        darkMode
-                                            ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
-                                            : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                    }`}
-                                    onClick={() =>
-                                        handleTerminate(emp.offerId)
-                                    }
-                                >
-                                    Terminate Employment
-                                </button>
+                                {emp.status !== "Terminated" && (
+                                    <button
+                                        disabled={terminatingId === emp.offerId}
+                                        className={`mt-5 w-full rounded-xl border py-3 font-semibold transition-all duration-300 ${
+                                            darkMode
+                                                ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
+                                                : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                                        } ${terminatingId === emp.offerId ? "cursor-not-allowed opacity-60" : ""}`}
+                                        onClick={() =>
+                                            handleTerminate(emp.offerId)
+                                        }
+                                    >
+                                        {terminatingId === emp.offerId ? "Terminating On-Chain..." : "Terminate Employment"}
+                                    </button>
+                                )}
 
                             </div>
 

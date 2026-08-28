@@ -6,12 +6,17 @@ import {
   getAllJobs,
   applyToJob,
   getApplicants,
+  getApplicantDetail,
   createEmploymentOffer,
   getMyOffers,
   acceptOffer,
   rejectOffer,
   getOrganisationEmployees,
   terminateEmployment,
+  getStudentApplications,
+  getJobById,
+  getMyEmployment,
+    getStudentEmploymentMetadata,
 } from "../controllers/EmploymentController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
@@ -62,6 +67,12 @@ router.get(
     getAllJobs
 );
 
+router.get(
+    "/jobs/:jobId",
+    authenticate,
+    authorizeRoles("STUDENT"),
+    getJobById
+);
 
 // Apply to a job
 router.post(
@@ -71,6 +82,27 @@ router.post(
     applyToJob
 );
 
+// View my applications
+router.get(
+    "/applications/my",
+    authenticate,
+    authorizeRoles("STUDENT"),
+    getStudentApplications
+);
+
+router.get(
+    "/my",
+    authenticate,
+    authorizeRoles("STUDENT"),
+    getMyEmployment
+);
+
+router.get(
+    "/students/:studentId",
+    authenticate,
+    authorizeRoles("ORGANISATION"),
+    getStudentEmploymentMetadata
+);
 
 // =====================================================
 // Organisation Routes
@@ -85,6 +117,12 @@ router.get(
     getApplicants
 );
 
+router.get(
+    "/jobs/:jobId/applications/:applicationId",
+    authenticate,
+    authorizeRoles("ORGANISATION"),
+    getApplicantDetail
+);
 
 // Create employment offer
 // IMPORTANT: verify the application belongs to

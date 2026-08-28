@@ -1,87 +1,101 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ethers } from "ethers";
 
 import { createOffer } from "../../services/blockchainService";
-
 import {
     getApplicants,
     createEmploymentOffer,
 } from "../../services/employmentService";
-
+import { getCertificates } from "../../services/certificateService";
 import { EmploymentType } from "../../utils/enums";
-
 import MeshBackground from "../../components/common/MeshBackground";
-
 
 function Applicants() {
 
     const { jobId } = useParams();
+    const navigate = useNavigate();
 
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [employmentType, setEmploymentType] = useState("");
     const [deadline, setDeadline] = useState("");
+    const [sendingId, setSendingId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
+
+    // Inspection state
+    const [expandedStudentId, setExpandedStudentId] = useState(null);
+    const [studentCertificates, setStudentCertificates] = useState([]);
+    const [loadingCredentials, setLoadingCredentials] = useState(false);
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
-
     useEffect(() => {
         fetchApplicants();
     }, []);
 
-
     const fetchApplicants = async () => {
-
         try {
-
             const data = await getApplicants(jobId);
-
-            setApplicants(data);
-
+            setApplicants(data || []);
         } catch (error) {
-
-            console.error(error);
-
+            console.error("Fetch applicants error:", error);
         } finally {
-
             setLoading(false);
-
         }
-
     };
 
+    const toggleInspectStudent = async (student) => {
+        if (expandedStudentId === student._id) {
+            setExpandedStudentId(null);
+            return;
+        }
+
+        setExpandedStudentId(student._id);
+        setLoadingCredentials(true);
+        try {
+            const certs = await getCertificates(student._id);
+            setStudentCertificates(certs || []);
+        } catch (err) {
+            console.error("Failed to load student certificates:", err);
+            setStudentCertificates([]);
+        } finally {
+            setLoadingCredentials(false);
+        }
+    };
 
     const handleOffer = async (application) => {
+        if (!employmentType) {
+            setStatusMessage({ id: application._id, text: "Please select an Employment Type.", type: "error" });
+            return;
+        }
+        if (!deadline) {
+            setStatusMessage({ id: application._id, text: "Please select an Application Deadline.", type: "error" });
+            return;
+        }
+
+        setSendingId(application._id);
+        setStatusMessage({ id: application._id, text: "Prompting MetaMask to create offer on-chain...", type: "info" });
 
         try {
-
             const employmentHash = crypto.randomUUID();
+            const employmentHashBytes = ethers.id(employmentHash);
+            const deadlineTimestamp = Math.floor(new Date(deadline).getTime() / 1000);
 
-            const employmentHashBytes =
-                ethers.id(employmentHash);
-
-            const deadlineTimestamp = Math.floor(
-                new Date(deadline).getTime() / 1000
+            // Step 1: Blockchain create offer
+            setStatusMessage({ id: application._id, text: "Waiting for blockchain transaction confirmation...", type: "info" });
+            const { txHash, offerId } = await createOffer(
+                employmentHashBytes,
+                EmploymentType[employmentType],
+                application.student.walletAddress,
+                deadlineTimestamp
             );
 
-
-            // Blockchain
-
-            const { txHash, offerId } =
-                await createOffer(
-                    employmentHashBytes,
-                    EmploymentType[employmentType],
-                    application.student.walletAddress,
-                    deadlineTimestamp
-                );
-
-
-            // MongoDB
-
+            // Step 2: Synchronize offer in MongoDB
+            setStatusMessage({ id: application._id, text: "Synchronizing offer details in database...", type: "info" });
             await createEmploymentOffer(
                 application._id,
                 offerId,
@@ -89,15 +103,23 @@ function Applicants() {
                 txHash
             );
 
+            setStatusMessage({
+                id: application._id,
+                text: `✓ Employment Offer Sent successfully! Tx: ${txHash ? txHash.slice(0, 14) : ""}...`,
+                type: "success"
+            });
 
-            alert("Offer Sent");
-
+            setTimeout(() => {
+                fetchApplicants();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1500);
         } catch (err) {
-
-            console.error(err);
-
+            console.error("Create offer error:", err);
+            const errMsg = err.shortMessage || err.reason || err.message || "Failed to send offer";
+            setStatusMessage({ id: application._id, text: `❌ ${errMsg}`, type: "error" });
+        } finally {
+            setSendingId(null);
         }
-
     };
 
 
@@ -338,6 +360,68 @@ function Applicants() {
 
                                 </div>
 
+                                {/* ================= INSPECT CREDENTIALS ================= */}
+                                <div className="mt-4 flex flex-wrap items-center gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            navigate(`/organisation/jobs/${jobId}/applications/${application._id}/profile`)
+                                        }
+                                        className={`inline-flex items-center gap-2 text-xs font-semibold transition hover:underline ${
+                                            darkMode ? "text-blue-400" : "text-blue-600"
+                                        }`}
+                                    >
+                                        👤 View Professional Profile →
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleInspectStudent(application.student)}
+                                        className="inline-flex items-center gap-1 text-xs font-semibold text-violet-400 hover:underline"
+                                    >
+                                        📜 {expandedStudentId === application.student._id ? "Hide Credentials" : "Inspect Verified Credentials"}
+                                    </button>
+
+                                    {expandedStudentId === application.student._id && (
+                                        <div className={`mt-3 rounded-2xl border p-4 text-xs ${darkMode ? "border-white/10 bg-white/[0.02]" : "border-slate-200 bg-slate-50"}`}>
+                                            {loadingCredentials ? (
+                                                <p className="text-slate-500">Loading candidate certificates...</p>
+                                            ) : studentCertificates.length === 0 ? (
+                                                <p className="text-slate-500">No verified certificates found for this candidate.</p>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    <p className="font-semibold text-slate-400">Verified Certificates ({studentCertificates.length}):</p>
+                                                    <ul className="space-y-1">
+                                                        {studentCertificates.map((cert) => (
+                                                            <li key={cert._id} className="flex items-center justify-between gap-2 border-b border-white/5 py-1">
+                                                                <span className="font-medium">{cert.certificateName} ({cert.certificateType})</span>
+                                                                <span className={`px-2 py-0.5 rounded text-[10px] ${cert.verificationStatus === "Verified" ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}`}>
+                                                                    {cert.verificationStatus}
+                                                                </span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* ================= STATUS BANNER ================= */}
+                                {statusMessage.id === application._id && statusMessage.text && (
+                                    <div
+                                        className={`mt-4 rounded-2xl p-3 text-xs font-medium ${
+                                            statusMessage.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : statusMessage.type === "error"
+                                                ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                                : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                        }`}
+                                    >
+                                        {statusMessage.text}
+                                    </div>
+                                )}
+
 
                                 {/* ================= OFFER SECTION ================= */}
 
@@ -451,12 +535,15 @@ function Applicants() {
                                         {/* Send Offer */}
 
                                         <button
+                                            disabled={sendingId === application._id}
                                             onClick={() =>
                                                 handleOffer(application)
                                             }
-                                            className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30"
+                                            className={`mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30 ${
+                                                sendingId === application._id ? "cursor-not-allowed opacity-60" : ""
+                                            }`}
                                         >
-                                            Send Employment Offer
+                                            {sendingId === application._id ? "Sending Offer On-Chain..." : "Send Employment Offer →"}
                                         </button>
 
                                     </div>

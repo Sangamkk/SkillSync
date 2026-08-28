@@ -2,7 +2,6 @@ import { ethers } from "ethers";
 import { getOrganisationRegistry } from "../utils/organisationRegistry";
 
 export const registerOrganisation = async (wallet, organisationType) => {
-
     const contract = await getOrganisationRegistry();
 
     const owner = await contract.owner();
@@ -17,4 +16,6 @@ export const registerOrganisation = async (wallet, organisationType) => {
         wallet,
         organisationType
     );
-}
+    await tx.wait();
+    return tx.hash;
+};

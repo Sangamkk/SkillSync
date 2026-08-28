@@ -5,80 +5,81 @@ import {
     approveOrganisation,
     rejectOrganisation,
 } from "../services/adminService";
+import { OrganizationType } from "../utils/enums";
 import MeshBackground from "../components/common/MeshBackground";
 
 const AdminDashboard = () => {
 
     const [applications, setApplications] = useState([]);
+    const [loadingId, setLoadingId] = useState(null);
+    const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
 
-
     useEffect(() => {
         fetchApplications();
     }, []);
 
-
     const fetchApplications = async () => {
         try {
-
             const data = await getPendingApplications();
-
-            setApplications(data);
-
+            setApplications(data || []);
         } catch (error) {
-
-            console.log(error);
-
+            console.error("Error fetching applications:", error);
         }
     };
-
 
     const handleApprove = async (app) => {
+        setLoadingId(app._id);
+        setStatusMessage({ id: app._id, text: "Prompting MetaMask transaction...", type: "info" });
 
         try {
+            const orgTypeEnum = OrganizationType[app.organisationType] ?? 0;
+            console.log(`Registering org on-chain: ${app.walletAddress} with type ${app.organisationType} (enum ${orgTypeEnum})`);
 
-            const txHash =
-                await registerOrganisation(
-                    app.walletAddress,
-                    0
-                );
+            setStatusMessage({ id: app._id, text: "Waiting for blockchain confirmation on Polygon/Ethereum...", type: "info" });
+            const txHash = await registerOrganisation(app.walletAddress, orgTypeEnum);
 
-            await approveOrganisation(
-                app._id,
-                txHash
-            );
+            setStatusMessage({ id: app._id, text: `Transaction confirmed (${txHash.slice(0, 10)}...). Synchronizing database...`, type: "info" });
+            await approveOrganisation(app._id, txHash);
 
-            alert("Approved");
-
-            fetchApplications();
-
+            setStatusMessage({ id: app._id, text: `✓ Successfully Approved on-chain! Tx: ${txHash}`, type: "success" });
+            setTimeout(() => {
+                fetchApplications();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1500);
         } catch (error) {
-
-            console.log(error);
-
+            console.error("Approval error:", error);
+            const errText = error.shortMessage || error.reason || error.message || "Approval failed";
+            setStatusMessage({ id: app._id, text: `❌ ${errText}`, type: "error" });
+        } finally {
+            setLoadingId(null);
         }
     };
 
-
     const handleReject = async (app) => {
+        const reason = window.prompt("Please enter reason for rejection:", "Application did not meet verification criteria.");
+        if (reason === null) return; // User cancelled prompt
+
+        setLoadingId(app._id);
+        setStatusMessage({ id: app._id, text: "Rejecting application...", type: "info" });
 
         try {
-
-            await rejectOrganisation(app._id);
-
-            alert("Application Rejected");
-
-            await fetchApplications();
-
+            await rejectOrganisation(app._id, reason);
+            setStatusMessage({ id: app._id, text: "Application Rejected", type: "success" });
+            setTimeout(() => {
+                fetchApplications();
+                setStatusMessage({ id: null, text: "", type: "" });
+            }, 1000);
         } catch (error) {
-
-            console.log(error);
-
+            console.error("Rejection error:", error);
+            const errText = error.response?.data?.message || error.message || "Rejection failed";
+            setStatusMessage({ id: app._id, text: `❌ ${errText}`, type: "error" });
+        } finally {
+            setLoadingId(null);
         }
-
     };
 
 
@@ -413,27 +414,85 @@ const AdminDashboard = () => {
 
                                 </div>
 
+                                {/* ================= ORGANISATION-SPECIFIC DETAILS ================= */}
+                                {app.details && Object.keys(app.details).length > 0 && (
+                                    <div
+                                        className={`mt-4 rounded-2xl border p-4 ${
+                                            darkMode
+                                                ? "border-violet-500/10 bg-violet-500/[0.02]"
+                                                : "border-violet-100 bg-violet-50/40"
+                                        }`}
+                                    >
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+                                            {app.organisationType} Details
+                                        </p>
+                                        <div className="mt-3 grid gap-3 sm:grid-cols-2 text-xs">
+                                            {Object.entries(app.details).map(([key, val]) => (
+                                                val ? (
+                                                    <div key={key}>
+                                                        <span className="font-semibold capitalize text-slate-400">
+                                                            {key.replace(/([A-Z])/g, " $1")}:{" "}
+                                                        </span>
+                                                        {key === "website" ? (
+                                                            <a
+                                                                href={val.startsWith("http") ? val : `https://${val}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-400 hover:underline"
+                                                            >
+                                                                {val}
+                                                            </a>
+                                                        ) : (
+                                                            <span className={darkMode ? "text-slate-200" : "text-slate-700"}>
+                                                                {String(val)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : null
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* STATUS MESSAGE */}
+                                {statusMessage.id === app._id && statusMessage.text && (
+                                    <div
+                                        className={`mt-4 rounded-2xl p-3 text-xs font-medium ${
+                                            statusMessage.type === "success"
+                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : statusMessage.type === "error"
+                                                ? "border border-red-500/30 bg-red-500/10 text-red-400"
+                                                : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
+                                        }`}
+                                    >
+                                        {statusMessage.text}
+                                    </div>
+                                )}
 
                                 {/* ================= ACTIONS ================= */}
 
                                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
 
                                     <button
-                                        className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-3 font-semibold text-white shadow-lg shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                                        disabled={loadingId === app._id}
+                                        className={`flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-3 font-semibold text-white shadow-lg shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
+                                            loadingId === app._id ? "cursor-not-allowed opacity-60" : ""
+                                        }`}
                                         onClick={() =>
                                             handleApprove(app)
                                         }
                                     >
-                                        ✓ Approve Organisation
+                                        {loadingId === app._id ? "Processing Blockchain Tx..." : "✓ Approve Organisation"}
                                     </button>
 
 
                                     <button
+                                        disabled={loadingId === app._id}
                                         className={`rounded-xl border px-5 py-3 font-semibold transition-all duration-300 sm:flex-none ${
                                             darkMode
                                                 ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                                                 : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                        }`}
+                                        } ${loadingId === app._id ? "cursor-not-allowed opacity-60" : ""}`}
                                         onClick={() =>
                                             handleReject(app)
                                         }
