@@ -189,14 +189,43 @@ const OrganisationRequests = () => {
     };
 
 
+    const handleDirectPredict = async (item) => {
+        try {
+            console.log("Direct prediction for:", item);
+
+            const certificateHash = item.certificate.certificateHash;
+
+            // Later call your ML backend here
+            // const result = await directPredict(certificateHash);
+
+        } catch (error) {
+            console.error("Direct prediction error:", error);
+        }
+    };
+
+
+    const handleExtractCertificate = async (item) => {
+        try {
+            console.log("Extracting certificate:", item);
+
+            const certificateHash = item.certificate.certificateHash;
+
+            // Later call your OCR backend here
+            // const result = await extractCertificate(certificateHash);
+
+        } catch (error) {
+            console.error("Certificate extraction error:", error);
+        }
+    };
+
+
     return (
 
         <div
-            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${
-                darkMode
-                    ? "bg-[#070B14] text-white"
-                    : "bg-[#F6F8FC] text-slate-900"
-            }`}
+            className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${darkMode
+                ? "bg-[#070B14] text-white"
+                : "bg-[#F6F8FC] text-slate-900"
+                }`}
         >
 
             {/* ================= MESH BACKGROUND ================= */}
@@ -207,19 +236,17 @@ const OrganisationRequests = () => {
             {/* ================= BACKGROUND GLOW ================= */}
 
             <div
-                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
-                        ? "bg-blue-600/15"
-                        : "bg-blue-500/10"
-                }`}
+                className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
+                    ? "bg-blue-600/15"
+                    : "bg-blue-500/10"
+                    }`}
             />
 
             <div
-                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${
-                    darkMode
-                        ? "bg-violet-600/15"
-                        : "bg-violet-500/10"
-                }`}
+                className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${darkMode
+                    ? "bg-violet-600/15"
+                    : "bg-violet-500/10"
+                    }`}
             />
 
 
@@ -243,11 +270,10 @@ const OrganisationRequests = () => {
                         </h1>
 
                         <p
-                            className={`mt-2 max-w-2xl text-sm leading-6 ${
-                                darkMode
-                                    ? "text-slate-400"
-                                    : "text-slate-500"
-                            }`}
+                            className={`mt-2 max-w-2xl text-sm leading-6 ${darkMode
+                                ? "text-slate-400"
+                                : "text-slate-500"
+                                }`}
                         >
                             Review pending credentials, verify projects, and manage employment offers.
                         </p>
@@ -334,11 +360,10 @@ const OrganisationRequests = () => {
                 {/* ================= REQUEST COUNT ================= */}
 
                 <div
-                    className={`mb-6 inline-flex items-center gap-3 rounded-2xl border px-5 py-3 ${
-                        darkMode
-                            ? "border-white/10 bg-white/[0.04]"
-                            : "border-slate-200 bg-white shadow-sm"
-                    }`}
+                    className={`mb-6 inline-flex items-center gap-3 rounded-2xl border px-5 py-3 ${darkMode
+                        ? "border-white/10 bg-white/[0.04]"
+                        : "border-slate-200 bg-white shadow-sm"
+                        }`}
                 >
 
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
@@ -365,19 +390,17 @@ const OrganisationRequests = () => {
                 {requests.length === 0 && (
 
                     <div
-                        className={`rounded-3xl border p-12 text-center backdrop-blur-xl ${
-                            darkMode
-                                ? "border-white/10 bg-white/[0.04]"
-                                : "border-slate-200 bg-white/80 shadow-sm"
-                        }`}
+                        className={`rounded-3xl border p-12 text-center backdrop-blur-xl ${darkMode
+                            ? "border-white/10 bg-white/[0.04]"
+                            : "border-slate-200 bg-white/80 shadow-sm"
+                            }`}
                     >
 
                         <div
-                            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-2xl ${
-                                darkMode
-                                    ? "bg-violet-500/10"
-                                    : "bg-violet-50"
-                            }`}
+                            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-2xl ${darkMode
+                                ? "bg-violet-500/10"
+                                : "bg-violet-50"
+                                }`}
                         >
                             📜
                         </div>
@@ -406,11 +429,10 @@ const OrganisationRequests = () => {
 
                             <div
                                 key={index}
-                                className={`rounded-3xl border p-6 backdrop-blur-xl transition-all duration-300 ${
-                                    darkMode
-                                        ? "border-white/10 bg-white/[0.045] shadow-xl shadow-black/20 hover:-translate-y-1 hover:border-violet-500/20"
-                                        : "border-slate-200 bg-white/85 shadow-sm hover:-translate-y-1 hover:shadow-lg"
-                                }`}
+                                className={`rounded-3xl border p-6 backdrop-blur-xl transition-all duration-300 ${darkMode
+                                    ? "border-white/10 bg-white/[0.045] shadow-xl shadow-black/20 hover:-translate-y-1 hover:border-violet-500/20"
+                                    : "border-slate-200 bg-white/85 shadow-sm hover:-translate-y-1 hover:shadow-lg"
+                                    }`}
                             >
 
                                 {/* Card Header */}
@@ -418,11 +440,10 @@ const OrganisationRequests = () => {
                                 <div className="flex items-start justify-between gap-4">
 
                                     <div
-                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                                            darkMode
-                                                ? "bg-violet-500/10 text-violet-400"
-                                                : "bg-violet-50 text-violet-600"
-                                        }`}
+                                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${darkMode
+                                            ? "bg-violet-500/10 text-violet-400"
+                                            : "bg-violet-50 text-violet-600"
+                                            }`}
                                     >
                                         📜
                                     </div>
@@ -437,11 +458,10 @@ const OrganisationRequests = () => {
                                         </span>
                                     ) : (
                                         <span
-                                            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                                                darkMode
-                                                    ? "bg-amber-500/10 text-amber-400"
-                                                    : "bg-amber-50 text-amber-600"
-                                            }`}
+                                            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${darkMode
+                                                ? "bg-amber-500/10 text-amber-400"
+                                                : "bg-amber-50 text-amber-600"
+                                                }`}
                                         >
                                             PENDING VERIFICATION
                                         </span>
@@ -464,11 +484,10 @@ const OrganisationRequests = () => {
                                     {/* Issuer */}
 
                                     <div
-                                        className={`rounded-2xl p-4 ${
-                                            darkMode
-                                                ? "bg-white/[0.03]"
-                                                : "bg-slate-50"
-                                        }`}
+                                        className={`rounded-2xl p-4 ${darkMode
+                                            ? "bg-white/[0.03]"
+                                            : "bg-slate-50"
+                                            }`}
                                     >
 
                                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -485,11 +504,10 @@ const OrganisationRequests = () => {
                                     {/* Certificate Type */}
 
                                     <div
-                                        className={`rounded-2xl p-4 ${
-                                            darkMode
-                                                ? "bg-white/[0.03]"
-                                                : "bg-slate-50"
-                                        }`}
+                                        className={`rounded-2xl p-4 ${darkMode
+                                            ? "bg-white/[0.03]"
+                                            : "bg-slate-50"
+                                            }`}
                                     >
 
                                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -504,11 +522,10 @@ const OrganisationRequests = () => {
 
                                     {/* Student Wallet */}
                                     <div
-                                        className={`rounded-2xl p-4 ${
-                                            darkMode
-                                                ? "bg-white/[0.03]"
-                                                : "bg-slate-50"
-                                        }`}
+                                        className={`rounded-2xl p-4 ${darkMode
+                                            ? "bg-white/[0.03]"
+                                            : "bg-slate-50"
+                                            }`}
                                     >
                                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                                             Student Address
@@ -523,13 +540,12 @@ const OrganisationRequests = () => {
                                 {/* ACTION FEEDBACK */}
                                 {actionMessage.id === item.request.id.toString() && actionMessage.text && (
                                     <div
-                                        className={`mt-4 rounded-2xl p-3 text-xs font-medium ${
-                                            actionMessage.type === "success"
-                                                ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                                                : actionMessage.type === "error"
+                                        className={`mt-4 rounded-2xl p-3 text-xs font-medium ${actionMessage.type === "success"
+                                            ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                            : actionMessage.type === "error"
                                                 ? "border border-red-500/30 bg-red-500/10 text-red-400"
                                                 : "border border-blue-500/30 bg-blue-500/10 text-blue-400"
-                                        }`}
+                                            }`}
                                     >
                                         {actionMessage.text}
                                     </div>
@@ -546,6 +562,41 @@ const OrganisationRequests = () => {
                                     View Certificate Document ↗
                                 </button>
 
+                                {/* ML ANALYSIS BUTTONS */}
+
+                                {Number(item.request.status) === 0 && (
+                                    <div className="mt-4 grid grid-cols-2 gap-3">
+
+                                        {/* DIRECT PREDICTION */}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDirectPredict(item)}
+                                            className={`rounded-xl py-3 text-sm font-semibold transition-all duration-300 ${darkMode
+                                                ? "border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                                                : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                                }`}
+                                        >
+                                            🤖 Direct Predict
+                                        </button>
+
+
+                                        {/* EXTRACTION */}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleExtractCertificate(item)}
+                                            className={`rounded-xl py-3 text-sm font-semibold transition-all duration-300 ${darkMode
+                                                ? "border border-violet-500/30 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
+                                                : "border border-violet-200 bg-violet-50 text-violet-600 hover:bg-violet-100"
+                                                }`}
+                                        >
+                                            🔍 Extract Certificate
+                                        </button>
+
+                                    </div>
+                                )}
+
                                 {/* ACTION BUTTONS */}
                                 {Number(item.request.credentialType) === CredentialType.Certificate &&
                                     Number(item.request.requestType) === RequestType.AddCertificate &&
@@ -553,29 +604,27 @@ const OrganisationRequests = () => {
                                     item.certificate.verificationStatus !== "Verified" &&
                                     item.certificate.verificationStatus !== "Rejected" &&
                                     item.certificate.verificationStatus !== "Cancelled" && (
-                                    <div className="mt-4 flex gap-3">
-                                        <button
-                                            disabled={processingId === item.request.id.toString()}
-                                            onClick={() => handleApprove(item)}
-                                            className={`flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-                                                processingId === item.request.id.toString() ? "cursor-not-allowed opacity-60" : ""
-                                            }`}
-                                        >
-                                            {processingId === item.request.id.toString() ? "Verifying..." : "✓ Approve & Verify On-Chain"}
-                                        </button>
-                                        <button
-                                            disabled={processingId === item.request.id.toString()}
-                                            onClick={() => handleReject(item)}
-                                            className={`rounded-xl border px-5 py-3 text-sm font-semibold transition-all duration-300 ${
-                                                darkMode
+                                        <div className="mt-4 flex gap-3">
+                                            <button
+                                                disabled={processingId === item.request.id.toString()}
+                                                onClick={() => handleApprove(item)}
+                                                className={`flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${processingId === item.request.id.toString() ? "cursor-not-allowed opacity-60" : ""
+                                                    }`}
+                                            >
+                                                {processingId === item.request.id.toString() ? "Verifying..." : "✓ Approve & Verify On-Chain"}
+                                            </button>
+                                            <button
+                                                disabled={processingId === item.request.id.toString()}
+                                                onClick={() => handleReject(item)}
+                                                className={`rounded-xl border px-5 py-3 text-sm font-semibold transition-all duration-300 ${darkMode
                                                     ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                                                     : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                            } ${processingId === item.request.id.toString() ? "cursor-not-allowed opacity-60" : ""}`}
-                                        >
-                                            Reject
-                                        </button>
-                                    </div>
-                                )}
+                                                    } ${processingId === item.request.id.toString() ? "cursor-not-allowed opacity-60" : ""}`}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
+                                    )}
 
                             </div>
 

@@ -6,6 +6,7 @@ import studentRoutes from "../routes/student.routes.js";
 import certificateRoutes from "../routes/certificate.routes.js";
 import organisationRoutes from "../routes/organisation.routes.js";
 import employmentRoutes from "../routes/EmploymentRoutes.js";
+import mlRoutes from "../routes/ml.routes.js";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.use("/api/student", studentRoutes);
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/organisation", organisationRoutes);
 app.use("/api/employment", employmentRoutes);
+app.use("/api/ml",mlRoutes);
 
 export default app;
