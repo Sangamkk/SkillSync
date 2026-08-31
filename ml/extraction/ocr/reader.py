@@ -70,13 +70,13 @@ class CertificateOcrReader:
         try:
             from paddleocr import PaddleOCR
         except ImportError as exc:
-            raise RuntimeError("Install OCR dependencies with: pip install -r requirements.txt") from exc
+            raise RuntimeError(
+               "Install OCR dependencies with: pip install -r requirements.txt"
+            ) from exc
 
-        try:
-            self._ocr = PaddleOCR(use_angle_cls=True, lang=language, show_log=False)
-        except TypeError:
-            # PaddleOCR 3.x removed some legacy constructor options.
-            self._ocr = PaddleOCR(lang=language)
+    self._ocr = PaddleOCR(
+        lang=language
+    )
 
     def read(self, path: str | Path) -> object:
         """Run OCR on a supported certificate image or PDF."""

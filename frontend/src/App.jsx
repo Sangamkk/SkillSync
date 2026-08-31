@@ -28,6 +28,7 @@ import ApplicantDetail from "./pages/Organisation/ApplicantDetail";
 import CandidateProfilePage from "./pages/Organisation/CandidateProfilePage";
 import  Employees from "./pages/Organisation/Employee";
 import PendingProjects from "./pages/Organisation/PendingProjects";
+import ExtractCertificate from "./pages/Organisation/ExtractCertificate";
 
 function App() {
   return (
@@ -60,9 +61,9 @@ function App() {
         <Route path="/organisation/jobs/:jobId/applications" element={<Applicants />} />
         <Route path="/organisation/jobs/:jobId/applications/:applicationId" element={<ApplicantDetail />} />
         <Route path="/organisation/jobs/:jobId/applications/:applicationId/profile" element={<CandidateProfilePage />} />
-        <Route  path="/organisation/employees"  element={<Employees />}/>
-        <Route  path="/organisation/project"  element={<PendingProjects />}/>
-
+        <Route path="/organisation/employees"  element={<Employees />}/>
+        <Route path="/organisation/project"  element={<PendingProjects />}/>
+        <Route path="/organisation/extract-certificate/:certificateId" element={<ExtractCertificate />} />
         
         {/* Admin */}
         <Route path="/admin" element={<AdminDashboard />} />

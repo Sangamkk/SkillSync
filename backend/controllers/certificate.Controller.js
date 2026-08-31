@@ -14,32 +14,30 @@ import OrganisationApplication from "../models/OrganisationApplication.js";
 const uploadToCloudinary = (buffer, originalName) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-
             {
                 resource_type: "raw",
                 type: "upload",
-                access_mode: "public",
                 folder: "SkillSync/Certificates",
                 use_filename: true,
                 unique_filename: true,
                 filename_override: originalName
             },
 
-            (error, result) => {
+        (error, result) => {
 
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(result);
-                }
-
+            if (error) {
+                reject(error);
+            } else {
+                resolve(result);
             }
+
+        }
 
         );
 
-        streamifier.createReadStream(buffer).pipe(uploadStream);
+    streamifier.createReadStream(buffer).pipe(uploadStream);
 
-    });
+});
 
 };
 

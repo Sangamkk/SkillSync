@@ -18,6 +18,6 @@ app.use("/api/student", studentRoutes);
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/organisation", organisationRoutes);
 app.use("/api/employment", employmentRoutes);
-app.use("/api/ml",mlRoutes);
+app.use("/api/ml", mlRoutes);
 
 export default app;

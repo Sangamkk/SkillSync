@@ -15,6 +15,8 @@ import { getMyJobs, getOrganisationEmployees } from "../services/employmentServi
 import { CredentialType, RequestType } from "../utils/enums";
 import MeshBackground from "../components/common/MeshBackground";
 import { Link } from "react-router-dom";
+import { mlBackend } from "../services/mlServices";
+import { useNavigate } from "react-router-dom";
 
 const OrganisationRequests = () => {
 
@@ -36,6 +38,7 @@ const OrganisationRequests = () => {
     useEffect(() => {
         loadRequestsAndStats();
     }, []);
+    const navigate = useNavigate();
 
     const loadRequestsAndStats = async () => {
         setLoading(true);
@@ -188,34 +191,26 @@ const OrganisationRequests = () => {
         }
     };
 
-
     const handleDirectPredict = async (item) => {
         try {
-            console.log("Direct prediction for:", item);
-
-            const certificateHash = item.certificate.certificateHash;
-
-            // Later call your ML backend here
-            // const result = await directPredict(certificateHash);
-
+            const certificateId = item.certificate._id;
+            const result = await mlBackend(certificateId);
+            console.log("Prediction result:", result);
+            alert(`Prediction: ${result.prediction.label} Confidence: ${(result.prediction.confidence * 100).toFixed(2)}%`);
         } catch (error) {
-            console.error("Direct prediction error:", error);
+            console.error(
+                "Direct prediction error:",
+                error.response?.data || error.message
+            );
         }
     };
 
+    const handleExtractCertificate = (item) => {
 
-    const handleExtractCertificate = async (item) => {
-        try {
-            console.log("Extracting certificate:", item);
+        const certificateId = item.certificate._id;
 
-            const certificateHash = item.certificate.certificateHash;
+        navigate(`/organisation/extract-certificate/${certificateId}`);
 
-            // Later call your OCR backend here
-            // const result = await extractCertificate(certificateHash);
-
-        } catch (error) {
-            console.error("Certificate extraction error:", error);
-        }
     };
 
 
