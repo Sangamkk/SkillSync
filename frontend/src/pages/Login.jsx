@@ -2,20 +2,20 @@ import { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { Link, useNavigate } from "react-router-dom";
 import MeshBackground from "../components/common/MeshBackground";
-import { loginUser } from "../services/authService";
 import { applicantExists } from "../services/blockchainService";
+import { applicantLogin, organisationLogin } from "../services/backendAuthentication/loginService";
 
 function Login() {
     const { connectWallet } = useWallet();
+    const navigate = useNavigate();
+
+    // ================= THEME =================
 
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
     });
-    const [formData, setFormData] = useState({
-        email: "",
-        password: "",
-    });
-    const navigate = useNavigate();
+    const [role, setRole] = useState("STUDENT");
+    const [formData, setFormData] = useState({ email: "", password: "" });
 
     const handleChange = (e) => {
         setFormData({
@@ -24,16 +24,15 @@ function Login() {
         });
     };
 
+    // ================= HANDLE LOGIN =================
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (!formData.email || !formData.password) {
-            alert("Please fill all fields.");
-            return;
-        }
-
         try {
-            // 1. Connect MetaMask
+            // ==========================================
+            // 1. CONNECT METAMASK
+            // ==========================================
+
             const walletAddress = await connectWallet();
 
             console.log("Connected wallet:", walletAddress);
@@ -42,28 +41,49 @@ function Login() {
                 return;
             }
 
-            // 2. Check whether wallet is registered on blockchain
-            const exists = await applicantExists(walletAddress);
+            // ==========================================
+            // 2. APPLICANT BLOCKCHAIN CHECK
+            // ==========================================
 
-            if (!exists) {
-                alert("Wallet is not registered on blockchain");
-                return;
+            if (role === "STUDENT") {
+                const exists = await applicantExists(walletAddress);
+
+                if (!exists) {
+                    alert(
+                        "This wallet is not registered as an applicant."
+                    );
+                    return;
+                }
             }
 
-            // 3. Prepare login data
+            // ==========================================
+            // 3. PREPARE LOGIN DATA
+            // ==========================================
+
             const loginData = {
-                ...formData,
                 walletAddress,
+                role,
             };
 
             console.log("Login data:", loginData);
 
-            // 4. Login through backend
-            const response = await loginUser(loginData);
+            // ==========================================
+            // 4. LOGIN THROUGH BACKEND
+            // ==========================================
 
+            let response;
+
+            if (role === "STUDENT") {
+                response = await applicantLogin(loginData);
+            } else if (role === "ORGANISATION") {
+                response = await organisationLogin(loginData);
+            }
             console.log("Login response:", response);
 
-            // 5. Store authentication data
+            // ==========================================
+            // 5. STORE AUTHENTICATION DATA
+            // ==========================================
+
             localStorage.setItem("token", response.token);
 
             localStorage.setItem(
@@ -71,19 +91,39 @@ function Login() {
                 JSON.stringify(response.user)
             );
 
+            // ==========================================
+            // 6. VERIFY ROLE
+            // ==========================================
+
+            if (response.user.role !== role) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+
+                alert(
+                    "The selected account type does not match your account."
+                );
+
+                return;
+            }
+
+            // ==========================================
+            // 7. SUCCESS
+            // ==========================================
+
             alert(response.message || "Login successful");
 
-            // 6. Navigate according to role
+            // ==========================================
+            // 8. ROLE-BASED NAVIGATION
+            // ==========================================
+
             if (response.user.role === "STUDENT") {
                 navigate("/student/dashboard");
+                return;
             }
 
-            if (response.user.role === "ORGANIZATION") {
-                navigate("/organization/dashboard");
-            }
-
-            if (response.user.role === "COMPANY") {
-                navigate("/company/dashboard");
+            if (response.user.role === "ORGANISATION") {
+                navigate("/organisation");
+                return;
             }
 
         } catch (error) {
@@ -97,6 +137,7 @@ function Login() {
         }
     };
 
+    // ================= UI =================
 
     return (
         <div
@@ -106,15 +147,19 @@ function Login() {
                 }`}
         >
 
-            {/* Mesh Background */}
+            {/* ================= MESH BACKGROUND ================= */}
+
             <MeshBackground darkMode={darkMode} />
 
-            {/* Theme Toggle */}
+            {/* ================= THEME TOGGLE ================= */}
+
             <button
                 type="button"
                 onClick={() => {
                     const newMode = !darkMode;
+
                     setDarkMode(newMode);
+
                     localStorage.setItem(
                         "skillsync-theme",
                         newMode ? "dark" : "light"
@@ -124,27 +169,36 @@ function Login() {
                         ? "border-white/10 bg-white/5 hover:bg-white/10"
                         : "border-slate-200 bg-white shadow-sm hover:bg-slate-50"
                     }`}
-                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                title={
+                    darkMode
+                        ? "Switch to Light Mode"
+                        : "Switch to Dark Mode"
+                }
             >
                 {darkMode ? "☀️" : "🌙"}
             </button>
 
+            {/* ================= LOGIN CONTENT ================= */}
 
-            {/* Login Content */}
             <div className="relative z-10 w-full max-w-md">
 
-                {/* Brand */}
+                {/* ================= BRAND ================= */}
+
                 <div className="mb-8 text-center">
 
                     <h1
-                        className={`text-3xl font-bold tracking-tight ${darkMode ? "text-white" : "text-slate-900"
+                        className={`text-3xl font-bold tracking-tight ${darkMode
+                                ? "text-white"
+                                : "text-slate-900"
                             }`}
                     >
                         Skill<span className="text-blue-500">Sync</span>
                     </h1>
 
                     <p
-                        className={`mt-2 text-sm ${darkMode ? "text-slate-400" : "text-slate-500"
+                        className={`mt-2 text-sm ${darkMode
+                                ? "text-slate-400"
+                                : "text-slate-500"
                             }`}
                     >
                         Blockchain-powered credential verification
@@ -152,8 +206,8 @@ function Login() {
 
                 </div>
 
+                {/* ================= LOGIN CARD ================= */}
 
-                {/* Login Card */}
                 <div
                     className={`rounded-3xl border p-8 shadow-2xl backdrop-blur-2xl transition-colors duration-500 sm:p-10 ${darkMode
                             ? "border-white/10 bg-white/[0.06] shadow-black/30"
@@ -161,78 +215,130 @@ function Login() {
                         }`}
                 >
 
-                    <h2
-                        className={`text-center text-3xl font-bold tracking-tight ${darkMode ? "text-white" : "text-slate-900"
-                            }`}
-                    >
-                        Welcome Back
-                    </h2>
+                    {/* ================= HEADING ================= */}
 
-                    <p
-                        className={`mt-2 text-center text-sm ${darkMode ? "text-slate-400" : "text-slate-500"
-                            }`}
-                    >
-                        Login to your SkillSync account
-                    </p>
+                    <div className="text-center">
 
+                        <h2
+                            className={`text-3xl font-bold tracking-tight ${darkMode
+                                    ? "text-white"
+                                    : "text-slate-900"
+                                }`}
+                        >
+                            Welcome Back
+                        </h2>
 
-                    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                        <p
+                            className={`mt-2 text-sm ${darkMode
+                                    ? "text-slate-400"
+                                    : "text-slate-500"
+                                }`}
+                        >
+                            Login to your SkillSync account
+                        </p>
 
-                        {/* Email */}
-                        <div>
+                    </div>
 
-                            <label
-                                className={`mb-2 block text-sm font-medium ${darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
+                    {/* ================= ROLE SELECTOR ================= */}
+
+                    <div className="mt-7">
+
+                        <p
+                            className={`mb-3 text-sm font-medium ${darkMode
+                                    ? "text-slate-300"
+                                    : "text-slate-700"
+                                }`}
+                        >
+                            Login as
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+
+                            {/* ================= APPLICANT ================= */}
+
+                            <button
+                                type="button"
+                                onClick={() => setRole("STUDENT")}
+                                className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 transition-all duration-300 ${role === "STUDENT"
+                                        ? darkMode
+                                            ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                                            : "border-blue-500 bg-blue-50 text-blue-600"
+                                        : darkMode
+                                            ? "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                                            : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
                                     }`}
                             >
-                                Email Address
-                            </label>
 
-                            <input
-                                type="email"
-                                name="email"
-                                placeholder="Enter your email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
-                                        ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                                {/* Radio */}
+                                <span
+                                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${role === "STUDENT"
+                                            ? "border-blue-500"
+                                            : darkMode
+                                                ? "border-slate-600"
+                                                : "border-slate-300"
+                                        }`}
+                                >
+                                    {role === "STUDENT" && (
+                                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                                    )}
+                                </span>
+
+                                <span className="font-semibold">
+                                    Applicant
+                                </span>
+
+                            </button>
+
+                            {/* ================= ORGANISATION ================= */}
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setRole("ORGANISATION")
+                                }
+                                className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 transition-all duration-300 ${role === "ORGANISATION"
+                                        ? darkMode
+                                            ? "border-violet-500 bg-violet-500/10 text-violet-400"
+                                            : "border-violet-500 bg-violet-50 text-violet-600"
+                                        : darkMode
+                                            ? "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                                            : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
                                     }`}
-                            />
+                            >
+
+                                {/* Radio */}
+                                <span
+                                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${role === "ORGANISATION"
+                                            ? "border-violet-500"
+                                            : darkMode
+                                                ? "border-slate-600"
+                                                : "border-slate-300"
+                                        }`}
+                                >
+                                    {role === "ORGANISATION" && (
+                                        <span className="h-2 w-2 rounded-full bg-violet-500" />
+                                    )}
+                                </span>
+
+                                <span className="font-semibold">
+                                    Organisation
+                                </span>
+
+                            </button>
 
                         </div>
 
+                    </div>
 
-                        {/* Password */}
-                        <div>
+                    {/* ================= FORM ================= */}
 
-                            <label
-                                className={`mb-2 block text-sm font-medium ${darkMode
-                                        ? "text-slate-300"
-                                        : "text-slate-700"
-                                    }`}
-                            >
-                                Password
-                            </label>
+                    <form
+                        onSubmit={handleSubmit}
+                        className="mt-6 space-y-5"
+                    >
 
-                            <input
-                                type="password"
-                                name="password"
-                                placeholder="Enter your password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${darkMode
-                                        ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-blue-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10"
-                                        : "border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                                    }`}
-                            />
+                        {/* ================= LOGIN BUTTON ================= */}
 
-                        </div>
-
-
-                        {/* Login Button */}
                         <button
                             type="submit"
                             className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30"
@@ -242,8 +348,8 @@ function Login() {
                             </span>
                         </button>
 
+                        {/* ================= DIVIDER ================= */}
 
-                        {/* Divider */}
                         <div className="flex items-center gap-3 py-1">
 
                             <div
@@ -271,8 +377,8 @@ function Login() {
 
                         </div>
 
+                        {/* ================= REGISTER ================= */}
 
-                        {/* Register */}
                         <p
                             className={`text-center text-sm ${darkMode
                                     ? "text-slate-400"
@@ -287,17 +393,18 @@ function Login() {
                             >
                                 Register
                             </Link>
-
                         </p>
 
                     </form>
 
                 </div>
 
+                {/* ================= SECURITY INDICATORS ================= */}
 
-                {/* Security Indicators */}
                 <div
-                    className={`mt-6 flex items-center justify-center gap-6 text-xs ${darkMode ? "text-slate-600" : "text-slate-500"
+                    className={`mt-6 flex items-center justify-center gap-6 text-xs ${darkMode
+                            ? "text-slate-600"
+                            : "text-slate-500"
                         }`}
                 >
 

@@ -102,7 +102,7 @@ export const organisationLogin = async (req, res) => {
             });
         }
         console.log("Forwarding to service org-Login.")
-        const result = await organisationLoginService( walletAddress );
+        const result = await organisationLoginService( req.body );
         return res.status(200).json({
             success: true,
             message: "Organization login successful",

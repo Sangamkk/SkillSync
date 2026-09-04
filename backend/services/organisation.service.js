@@ -92,13 +92,15 @@ export const rejectApplicationService = async (id, rejectionReason) => {
     );
 };
 
-export const organisationLoginService = async (walletAddress) => {
+export const organisationLoginService = async (data) => {
+    const { walletAddress,role } = data;
     const normalizedWallet = walletAddress.toLowerCase();
 
     console.log("Searching in Database - orgLogin.")
     const organisation = await OrganisationApplication.findOne({
         walletAddress: normalizedWallet,
-        status: "Approved"
+        status: "Approved",
+        role
     });
 
     if (!organisation) {
@@ -119,7 +121,7 @@ export const organisationLoginService = async (walletAddress) => {
             _id: organisation._id,
             name: organisation.organisationName,
             email: organisation.email,
-            role: "organisation",
+            role: organisation.role,
             walletAddress: organisation.walletAddress
         }
     };

@@ -4,18 +4,18 @@ import {
     getIssuerRequests,
     approveVerificationRequest,
     rejectVerificationRequest
-} from "../services/requestService";
+} from "../../services/requestService"
 import {
     getCertificateByHash,
     getCertificateDocument,
     updateCertificateStatus
-} from "../services/certificateService";
-import { getPendingProjects } from "../services/projectService";
-import { getMyJobs, getOrganisationEmployees } from "../services/employmentService";
-import { CredentialType, RequestType } from "../utils/enums";
-import MeshBackground from "../components/common/MeshBackground";
+} from "../../services/certificateService";
+import { getPendingProjects } from "../../services/projectService";
+import { getMyJobs, getOrganisationEmployees } from "../../services/employmentService";
+import { CredentialType, RequestType } from "../../utils/enums";
+import MeshBackground from "../../components/common/MeshBackground";
 import { Link } from "react-router-dom";
-import { mlBackend } from "../services/mlServices";
+import { mlBackend } from "../../services/mlServices";
 import { useNavigate } from "react-router-dom";
 
 const OrganisationRequests = () => {

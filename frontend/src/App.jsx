@@ -2,13 +2,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Register from "./pages/student/applicantRegister";
 
-import RegisterOrganisation from "./pages/RegisterOrganisation";
+
 import AdminDashboard from "./pages/AdminDashboard";
 
 
-// Student Pages
+// Applicant Pages
 import StudentDashboard from "./pages/student/Dashboard";
 import Certificate from "./pages/student/Certificate";
 import Jobs from "./pages/student/Jobs";
@@ -19,8 +19,7 @@ import RequestVerification from "./pages/student/RequestVerification";
 import MyProjects from "./pages/student/MyProjects";
 
 // Organisation Pages
-import OrganisationLogin from "./pages/orgLogin";
-import OrganisationDashboard from "./pages/organizationDashboard";
+import OrganisationDashboard from "./pages/Organisation/organizationDashboard";
 import CreateJob from "./pages/Organisation/CreateJob";
 import MyJobs from "./pages/Organisation/MyJobs";
 import Applicants from "./pages/Organisation/Applicants";
@@ -29,6 +28,7 @@ import CandidateProfilePage from "./pages/Organisation/CandidateProfilePage";
 import  Employees from "./pages/Organisation/Employee";
 import PendingProjects from "./pages/Organisation/PendingProjects";
 import ExtractCertificate from "./pages/Organisation/ExtractCertificate";
+import RegisterOrganisation from "./pages/Organisation/RegisterOrganisation";
 
 function App() {
   return (
@@ -37,10 +37,11 @@ function App() {
 
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
+        
+
+        {/* Applicant Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/* Student Routes */}
         <Route path="/student/dashboard" element={<StudentDashboard />} />
         <Route path="/certificate" element={<Certificate />} />
         <Route path="/student/jobs" element={<Jobs />} />
@@ -53,7 +54,6 @@ function App() {
 
         {/* Organisation Routes */}
         <Route path="/org/register" element={<RegisterOrganisation />} />
-        <Route path="/org-login" element={<OrganisationLogin />}/>
         <Route path="/organisation" element={<OrganisationDashboard />}/>
         <Route path="/organisation/create-job" element={<CreateJob />} />
         <Route path="/organisation/jobs/new" element={<CreateJob />} />

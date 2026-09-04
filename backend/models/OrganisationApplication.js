@@ -46,6 +46,10 @@ const organisationApplicationSchema = new mongoose.Schema(
             ],
             default: "Pending"
         },
+        role:{
+            type:String,
+            default:"ORGANISATION"
+        },
 
         txHash: {
             type: String,

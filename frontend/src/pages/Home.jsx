@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ThreeDBackground from "../components/common/ThreeDBackground";
+import RoleSelector from "../components/common/RoleSelector";
 
 const Home = () => {
     const navigate = useNavigate();
@@ -29,11 +30,10 @@ const Home = () => {
 
     return (
         <div
-            className={`relative min-h-screen overflow-hidden transition-colors duration-500 ${
-                darkMode
-                    ? "bg-[#070B14] text-white"
-                    : "bg-[#F8FAFC] text-slate-900"
-            }`}
+            className={`relative min-h-screen overflow-hidden transition-colors duration-500 ${darkMode
+                ? "bg-[#070B14] text-white"
+                : "bg-[#F8FAFC] text-slate-900"
+                }`}
         >
 
             {/* =====================================================
@@ -55,11 +55,10 @@ const Home = () => {
                 ====================================================== */}
 
                 <nav
-                    className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl ${
-                        darkMode
-                            ? "border-white/10 bg-[#070B14]/80"
-                            : "border-slate-200/70 bg-white/80"
-                    }`}
+                    className={`fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl ${darkMode
+                        ? "border-white/10 bg-[#070B14]/80"
+                        : "border-slate-200/70 bg-white/80"
+                        }`}
                 >
 
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
@@ -92,11 +91,10 @@ const Home = () => {
                                 onClick={() =>
                                     scrollToSection("features")
                                 }
-                                className={`text-sm font-medium transition-colors ${
-                                    darkMode
-                                        ? "text-slate-300 hover:text-white"
-                                        : "text-slate-600 hover:text-slate-950"
-                                }`}
+                                className={`text-sm font-medium transition-colors ${darkMode
+                                    ? "text-slate-300 hover:text-white"
+                                    : "text-slate-600 hover:text-slate-950"
+                                    }`}
                             >
                                 Features
                             </button>
@@ -106,11 +104,10 @@ const Home = () => {
                                 onClick={() =>
                                     scrollToSection("how-it-works")
                                 }
-                                className={`text-sm font-medium transition-colors ${
-                                    darkMode
-                                        ? "text-slate-300 hover:text-white"
-                                        : "text-slate-600 hover:text-slate-950"
-                                }`}
+                                className={`text-sm font-medium transition-colors ${darkMode
+                                    ? "text-slate-300 hover:text-white"
+                                    : "text-slate-600 hover:text-slate-950"
+                                    }`}
                             >
                                 How It Works
                             </button>
@@ -120,11 +117,10 @@ const Home = () => {
                                 onClick={() =>
                                     scrollToSection("technology")
                                 }
-                                className={`text-sm font-medium transition-colors ${
-                                    darkMode
-                                        ? "text-slate-300 hover:text-white"
-                                        : "text-slate-600 hover:text-slate-950"
-                                }`}
+                                className={`text-sm font-medium transition-colors ${darkMode
+                                    ? "text-slate-300 hover:text-white"
+                                    : "text-slate-600 hover:text-slate-950"
+                                    }`}
                             >
                                 Technology
                             </button>
@@ -134,11 +130,10 @@ const Home = () => {
                                 onClick={() =>
                                     scrollToSection("contact")
                                 }
-                                className={`text-sm font-medium transition-colors ${
-                                    darkMode
-                                        ? "text-slate-300 hover:text-white"
-                                        : "text-slate-600 hover:text-slate-950"
-                                }`}
+                                className={`text-sm font-medium transition-colors ${darkMode
+                                    ? "text-slate-300 hover:text-white"
+                                    : "text-slate-600 hover:text-slate-950"
+                                    }`}
                             >
                                 Contact
                             </button>
@@ -156,11 +151,10 @@ const Home = () => {
                                 onClick={() =>
                                     setDarkMode(!darkMode)
                                 }
-                                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-300 hover:scale-105 ${
-                                    darkMode
-                                        ? "border-white/10 bg-white/5 hover:bg-white/10"
-                                        : "border-slate-200 bg-white hover:bg-slate-50"
-                                }`}
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-300 hover:scale-105 ${darkMode
+                                    ? "border-white/10 bg-white/5 hover:bg-white/10"
+                                    : "border-slate-200 bg-white hover:bg-slate-50"
+                                    }`}
                                 title={
                                     darkMode
                                         ? "Switch to Light Mode"
@@ -172,27 +166,10 @@ const Home = () => {
 
 
                             {/* Login */}
-
-                            <button
-                                onClick={() =>
-                                    navigate("/login")
-                                }
-                                className="hidden rounded-xl px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 md:block"
-                            >
-                                Login
-                            </button>
-
+                            <button className="px-5 py-2 rounded-md border border-blue-600 text-blue-600 font-medium text-sm transition duration-200 hover:bg-blue-600 hover:text-white" onClick={() => navigate("/login")}>Login</button>
 
                             {/* Get Started */}
-
-                            <button
-                                onClick={() =>
-                                    navigate("/register")
-                                }
-                                className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/30"
-                            >
-                                Get Started
-                            </button>
+                            <RoleSelector type="register" />
 
                         </div>
 
@@ -212,27 +189,24 @@ const Home = () => {
                     <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
                         <div
-                            className={`absolute left-[10%] top-20 h-72 w-72 rounded-full blur-[120px] ${
-                                darkMode
-                                    ? "bg-blue-600/20"
-                                    : "bg-blue-600/10"
-                            }`}
+                            className={`absolute left-[10%] top-20 h-72 w-72 rounded-full blur-[120px] ${darkMode
+                                ? "bg-blue-600/20"
+                                : "bg-blue-600/10"
+                                }`}
                         />
 
                         <div
-                            className={`absolute right-[10%] top-40 h-80 w-80 rounded-full blur-[130px] ${
-                                darkMode
-                                    ? "bg-violet-600/20"
-                                    : "bg-violet-600/10"
-                            }`}
+                            className={`absolute right-[10%] top-40 h-80 w-80 rounded-full blur-[130px] ${darkMode
+                                ? "bg-violet-600/20"
+                                : "bg-violet-600/10"
+                                }`}
                         />
 
                         <div
-                            className={`absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full blur-[120px] ${
-                                darkMode
-                                    ? "bg-cyan-500/10"
-                                    : "bg-cyan-500/10"
-                            }`}
+                            className={`absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full blur-[120px] ${darkMode
+                                ? "bg-cyan-500/10"
+                                : "bg-cyan-500/10"
+                                }`}
                         />
 
                     </div>
@@ -250,11 +224,10 @@ const Home = () => {
                             <div>
 
                                 <div
-                                    className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm ${
-                                        darkMode
-                                            ? "border-blue-400/20 bg-blue-500/10 text-blue-300"
-                                            : "border-blue-200 bg-blue-50 text-blue-700"
-                                    }`}
+                                    className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm ${darkMode
+                                        ? "border-blue-400/20 bg-blue-500/10 text-blue-300"
+                                        : "border-blue-200 bg-blue-50 text-blue-700"
+                                        }`}
                                 >
 
                                     <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
@@ -278,11 +251,10 @@ const Home = () => {
 
 
                                 <p
-                                    className={`mt-7 max-w-xl text-lg leading-8 ${
-                                        darkMode
-                                            ? "text-slate-400"
-                                            : "text-slate-600"
-                                    }`}
+                                    className={`mt-7 max-w-xl text-lg leading-8 ${darkMode
+                                        ? "text-slate-400"
+                                        : "text-slate-600"
+                                        }`}
                                 >
                                     SkillSync securely stores and verifies
                                     academic, professional and skill
@@ -311,11 +283,10 @@ const Home = () => {
                                         onClick={() =>
                                             navigate("/login")
                                         }
-                                        className={`rounded-xl border px-7 py-3.5 font-semibold transition-all duration-300 hover:-translate-y-1 ${
-                                            darkMode
-                                                ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
-                                                : "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
-                                        }`}
+                                        className={`rounded-xl border px-7 py-3.5 font-semibold transition-all duration-300 hover:-translate-y-1 ${darkMode
+                                            ? "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                                            : "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
+                                            }`}
                                     >
                                         🦊 Connect MetaMask
                                     </button>
@@ -382,11 +353,10 @@ const Home = () => {
                                 {/* Certificate */}
 
                                 <div
-                                    className={`relative w-[360px] rounded-3xl border p-7 shadow-2xl backdrop-blur-xl ${
-                                        darkMode
-                                            ? "border-white/10 bg-white/[0.06]"
-                                            : "border-slate-200 bg-white shadow-slate-200/60"
-                                    }`}
+                                    className={`relative w-[360px] rounded-3xl border p-7 shadow-2xl backdrop-blur-xl ${darkMode
+                                        ? "border-white/10 bg-white/[0.06]"
+                                        : "border-slate-200 bg-white shadow-slate-200/60"
+                                        }`}
                                 >
 
                                     <div className="flex items-center justify-between">
@@ -428,11 +398,10 @@ const Home = () => {
 
 
                                     <div
-                                        className={`mt-2 rounded-xl p-4 font-mono text-xs ${
-                                            darkMode
-                                                ? "bg-black/30 text-slate-300"
-                                                : "bg-slate-50 text-slate-600"
-                                        }`}
+                                        className={`mt-2 rounded-xl p-4 font-mono text-xs ${darkMode
+                                            ? "bg-black/30 text-slate-300"
+                                            : "bg-slate-50 text-slate-600"
+                                            }`}
                                     >
                                         0x8f42...a91c...7bd2
                                     </div>
@@ -473,11 +442,10 @@ const Home = () => {
                                 {/* Verification Popup */}
 
                                 <div
-                                    className={`absolute -bottom-4 -left-2 rounded-2xl border p-4 shadow-xl backdrop-blur-xl ${
-                                        darkMode
-                                            ? "border-white/10 bg-[#111827]/90"
-                                            : "border-slate-200 bg-white"
-                                    }`}
+                                    className={`absolute -bottom-4 -left-2 rounded-2xl border p-4 shadow-xl backdrop-blur-xl ${darkMode
+                                        ? "border-white/10 bg-[#111827]/90"
+                                        : "border-slate-200 bg-white"
+                                        }`}
                                 >
 
                                     <div className="flex items-center gap-3">
@@ -516,11 +484,10 @@ const Home = () => {
                 ====================================================== */}
 
                 <section
-                    className={`border-y ${
-                        darkMode
-                            ? "border-white/10 bg-white/[0.02]"
-                            : "border-slate-200 bg-white"
-                    }`}
+                    className={`border-y ${darkMode
+                        ? "border-white/10 bg-white/[0.02]"
+                        : "border-slate-200 bg-white"
+                        }`}
                 >
 
                     <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-slate-200/10 md:grid-cols-4">
@@ -606,11 +573,10 @@ const Home = () => {
                         {/* Certificates */}
 
                         <div
-                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${
-                                darkMode
-                                    ? "border-white/10 bg-white/[0.04] hover:border-blue-500/30"
-                                    : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
-                            }`}
+                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${darkMode
+                                ? "border-white/10 bg-white/[0.04] hover:border-blue-500/30"
+                                : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
+                                }`}
                         >
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-2xl">
@@ -639,11 +605,10 @@ const Home = () => {
                         {/* Skills */}
 
                         <div
-                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${
-                                darkMode
-                                    ? "border-white/10 bg-white/[0.04] hover:border-violet-500/30"
-                                    : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
-                            }`}
+                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${darkMode
+                                ? "border-white/10 bg-white/[0.04] hover:border-violet-500/30"
+                                : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
+                                }`}
                         >
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-2xl">
@@ -672,11 +637,10 @@ const Home = () => {
                         {/* Projects */}
 
                         <div
-                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${
-                                darkMode
-                                    ? "border-white/10 bg-white/[0.04] hover:border-cyan-500/30"
-                                    : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
-                            }`}
+                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${darkMode
+                                ? "border-white/10 bg-white/[0.04] hover:border-cyan-500/30"
+                                : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
+                                }`}
                         >
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-2xl">
@@ -705,11 +669,10 @@ const Home = () => {
                         {/* Verification */}
 
                         <div
-                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${
-                                darkMode
-                                    ? "border-white/10 bg-white/[0.04] hover:border-emerald-500/30"
-                                    : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
-                            }`}
+                            className={`group rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 ${darkMode
+                                ? "border-white/10 bg-white/[0.04] hover:border-emerald-500/30"
+                                : "border-slate-200 bg-white shadow-sm hover:shadow-xl"
+                                }`}
                         >
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl">
@@ -745,11 +708,10 @@ const Home = () => {
 
                 <section
                     id="how-it-works"
-                    className={`border-y ${
-                        darkMode
-                            ? "border-white/10 bg-white/[0.02]"
-                            : "border-slate-200 bg-slate-50"
-                    }`}
+                    className={`border-y ${darkMode
+                        ? "border-white/10 bg-white/[0.02]"
+                        : "border-slate-200 bg-slate-50"
+                        }`}
                 >
 
                     <div className="mx-auto max-w-7xl px-6 py-28 lg:px-8">
@@ -795,11 +757,10 @@ const Home = () => {
 
                                 <div
                                     key={step.number}
-                                    className={`relative rounded-3xl border p-8 ${
-                                        darkMode
-                                            ? "border-white/10 bg-white/[0.04]"
-                                            : "border-slate-200 bg-white"
-                                    }`}
+                                    className={`relative rounded-3xl border p-8 ${darkMode
+                                        ? "border-white/10 bg-white/[0.04]"
+                                        : "border-slate-200 bg-white"
+                                        }`}
                                 >
 
                                     <span className="text-sm font-bold text-blue-500">
@@ -865,11 +826,10 @@ const Home = () => {
 
                             <div
                                 key={technology}
-                                className={`flex min-h-28 items-center justify-center rounded-2xl border p-5 text-center font-semibold transition-all duration-300 hover:-translate-y-1 ${
-                                    darkMode
-                                        ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
-                                        : "border-slate-200 bg-white shadow-sm hover:shadow-lg"
-                                }`}
+                                className={`flex min-h-28 items-center justify-center rounded-2xl border p-5 text-center font-semibold transition-all duration-300 hover:-translate-y-1 ${darkMode
+                                    ? "border-white/10 bg-white/[0.04] hover:bg-white/[0.08]"
+                                    : "border-slate-200 bg-white shadow-sm hover:shadow-lg"
+                                    }`}
                             >
                                 {technology}
                             </div>
@@ -927,11 +887,10 @@ const Home = () => {
 
                 <footer
                     id="contact"
-                    className={`border-t ${
-                        darkMode
-                            ? "border-white/10 bg-[#050810]"
-                            : "border-slate-200 bg-slate-950"
-                    }`}
+                    className={`border-t ${darkMode
+                        ? "border-white/10 bg-[#050810]"
+                        : "border-slate-200 bg-slate-950"
+                        }`}
                 >
 
                     <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">

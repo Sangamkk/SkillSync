@@ -53,25 +53,12 @@ export const register = async (userData) => {
 
 
 export const login = async (loginData) => {
-  const { email, password, walletAddress } = loginData;
+  const {walletAddress,role} = loginData;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ walletAddress,role });
 
   if (!user) {
     throw new Error("User not found");
-  }
-
-  const isPasswordCorrect = await bcrypt.compare(
-    password,
-    user.password
-  );
-
-  if (!isPasswordCorrect) {
-    throw new Error("Invalid Password");
-  }
-
-  if (user.walletAddress !== walletAddress) {
-    throw new Error("Wallet does not match");
   }
 
   const token = generateToken(user);

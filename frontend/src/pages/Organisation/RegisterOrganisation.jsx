@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { applyOrganisation } from "../services/organizationService";
-import MeshBackground from "../components/common/MeshBackground";
+import { applyOrganisation } from "../../services/backendAuthentication/registerService";
+import MeshBackground from "../../components/common/MeshBackground";
 
 const RegisterOrganisation = () => {
     const [darkMode] = useState(() => {
