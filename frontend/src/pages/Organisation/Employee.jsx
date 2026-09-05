@@ -7,7 +7,7 @@ import {
 
 import {
     terminateEmployment as terminateEmploymentOnChain,
-} from "../../services/blockchainService";
+} from "../../services/blockchainServices/blockchainService";
 
 import MeshBackground from "../../components/common/MeshBackground";
 

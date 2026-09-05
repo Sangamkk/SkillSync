@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useWallet } from "../context/WalletContext";
 import { Link, useNavigate } from "react-router-dom";
 import MeshBackground from "../components/common/MeshBackground";
-import { applicantExists } from "../services/blockchainService";
+import { applicantExists } from "../services/blockchainServices/blockchainService";
 import { applicantLogin, organisationLogin } from "../services/backendAuthentication/loginService";
 
 function Login() {

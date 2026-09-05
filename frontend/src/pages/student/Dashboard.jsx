@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getProfile } from "../../services/studentService";
 import { getStudentCertificates } from "../../services/certificateService";
-import { getStudentProjectsFromBlockchain, getStudentEmploymentOnChain } from "../../services/blockchainService";
+import { getStudentProjectsFromBlockchain, getStudentEmploymentOnChain } from "../../services/blockchainServices/blockchainService";
 import { getMyApplications, getMyOffers } from "../../services/employmentService";
 import { getStudentProjects } from "../../services/projectService";
 import { getStudentRequests } from "../../services/requestService";
@@ -264,16 +264,16 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+                <div>Hello</div>
 
-                <ProfessionalProfile
-                    walletAddress={user?.walletAddress || localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "{}").walletAddress : ""}
-                    studentId={studentId}
-                    studentName={user?.name}
-                    studentEmail={user?.email}
-                    darkMode={darkMode}
-                    subtitle="On-chain portfolio"
-                />
+                <Link
+                    to="/student/project-history"
+                    className="rounded-xl bg-indigo-600/90 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-indigo-600"
+                >
+                    📜 Project History
+                </Link>
 
+                <div>Hello</div>
                 <div className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
                     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
                         <div>

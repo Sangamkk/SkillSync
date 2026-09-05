@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
     acceptOffer as acceptOfferOnChain,
     rejectOffer as rejectOfferOnChain,
-} from "../../services/blockchainService";
+} from "../../services/blockchainServices/blockchainService";
 
 import {
     getMyOffers,

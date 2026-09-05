@@ -38,6 +38,7 @@ const ProfessionalProfile = ({
         }
 
         const profile = await loadProfessionalProfile({ walletAddress, studentId, viewerRole });
+        console.log("kkkk",profile)
 
         if (!active) return;
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createProject, updateProjectStatus } from "../../services/projectService";
-import { addProjectOnChain } from "../../services/blockchainService";
+import { addProjectOnChain } from "../../services/blockchainServices/blockchainService";
 import MeshBackground from "../../components/common/MeshBackground";
 import { Link } from "react-router-dom";
 

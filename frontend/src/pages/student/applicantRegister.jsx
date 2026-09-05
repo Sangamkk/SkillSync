@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useWallet } from "../../context/WalletContext";
 import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../../services/backendAuthentication/registerService";
-import { createApplicant } from "../../services/blockchainService";
+import { createApplicant } from "../../services/blockchainServices/blockchainService";
 import MeshBackground from "../../components/common/MeshBackground";
 
 function Register() {

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getStudentProjects } from "../../services/projectService";
-import { getStudentRequests } from "../../services/requestService";
-import ApplicantManagerAbi from "../../abhi/ApplicantManager.json";
+import { getStudentProjects } from "../../../services/projectService";
+import { getStudentRequests } from "../../../services/requestService";
+import ApplicantManagerAbi from "../../../abhi/ApplicantManager.json";
 import { ethers } from "ethers";
-import MeshBackground from "../../components/common/MeshBackground";
+import MeshBackground from "../../../components/common/MeshBackground";
 
 const formatProjectId = (value) => {
     if (!value) return "—";

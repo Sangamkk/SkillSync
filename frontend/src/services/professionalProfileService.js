@@ -7,7 +7,7 @@ import {
   getApplicantProjectsDetailed,
   getStudentCertificatesOnChain,
   getStudentEmploymentOnChain,
-} from "./blockchainService";
+} from "./blockchainServices/blockchainService";
 
 const toArray = (value, key) => {
   if (Array.isArray(value)) return value;

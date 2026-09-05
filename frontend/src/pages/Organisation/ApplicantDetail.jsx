@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getApplicantDetail } from "../../services/employmentService";
 import { getCertificates } from "../../services/certificateService";
-import { getApplicantProjectsDetailed, getStudentEmploymentOnChain } from "../../services/blockchainService";
+import { getApplicantProjectsDetailed, getStudentEmploymentOnChain } from "../../services/blockchainServices/blockchainService";
 import { getStudentProjects } from "../../services/projectService";
 import MeshBackground from "../../components/common/MeshBackground";
 

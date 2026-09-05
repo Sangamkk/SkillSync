@@ -16,7 +16,8 @@ import JobDetail from "./pages/student/JobDetail";
 import StudentOffers from "./pages/student/StudentOffers";
 import AddProject from "./pages/student/AddProject";
 import RequestVerification from "./pages/student/RequestVerification";
-import MyProjects from "./pages/student/MyProjects";
+import MyProjects from "./pages/student/project/MyProjects";
+import ProjectHistory from "./pages/student/project/ProjectHistory";
 
 // Organisation Pages
 import OrganisationDashboard from "./pages/Organisation/organizationDashboard";
@@ -51,6 +52,7 @@ function App() {
         <Route path="/student/project/add" element={<AddProject />} />
         <Route path="/student/project/verify" element={<RequestVerification />} />
         <Route path="/student/projects" element={<MyProjects />} />
+        <Route path="/student/project-history" element={<ProjectHistory />}/>
 
         {/* Organisation Routes */}
         <Route path="/org/register" element={<RegisterOrganisation />} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ethers } from "ethers";
 
-import { createOffer } from "../../services/blockchainService";
+import { createOffer } from "../../services/blockchainServices/blockchainService";
 import {
     getApplicants,
     createEmploymentOffer,

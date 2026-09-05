@@ -1,10 +1,10 @@
 import { ethers } from "ethers";
-import { getContract } from "../config/contract";
+import { getContract } from "../../config/contract";
 
 import { getEmploymentContract }
-  from "../utils/EmploymentContract";
-import ApplicantManagerAbi from "../abhi/ApplicantManager.json";
-import EmploymentManagerAbi from "../abhi/EmploymentManager.json";
+  from "../../utils/EmploymentContract";
+import ApplicantManagerAbi from "../../abhi/ApplicantManager.json";
+import EmploymentManagerAbi from "../../abhi/EmploymentManager.json";
 
 const RPC_URL =
   import.meta.env.VITE_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
