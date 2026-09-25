@@ -30,6 +30,10 @@ import  Employees from "./pages/Organisation/Employee";
 import PendingProjects from "./pages/Organisation/PendingProjects";
 import ExtractCertificate from "./pages/Organisation/ExtractCertificate";
 import RegisterOrganisation from "./pages/Organisation/RegisterOrganisation";
+import OrganisationCertificates from "./pages/organisation/certificates/OrganisationCertificates";
+import IssueCertificate from "./pages/organisation/certificates/IssueCertificate";
+import IssuedCertificates from "./pages/organisation/certificates/IssuedCertificates";
+
 
 function App() {
   return (
@@ -66,7 +70,11 @@ function App() {
         <Route path="/organisation/employees"  element={<Employees />}/>
         <Route path="/organisation/project"  element={<PendingProjects />}/>
         <Route path="/organisation/extract-certificate/:certificateId" element={<ExtractCertificate />} />
-        
+        <Route path="/organisation/certificates" element={<OrganisationCertificates />} />
+        <Route path="/organisation/certificates/issue" element={<IssueCertificate />} />
+        <Route path="/organisation/certificates/issued" element={<IssuedCertificates />} />
+
+
         {/* Admin */}
         <Route path="/admin" element={<AdminDashboard />} />
 

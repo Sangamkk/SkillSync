@@ -300,6 +300,7 @@ const OrganisationRequests = () => {
                         >
                             👥 Employees ({orgStats.myEmployees})
                         </Link>
+                        <Link to="/organisation/certificates" className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500">📜 Certificates</Link>
                     </div>
 
                 </div>
