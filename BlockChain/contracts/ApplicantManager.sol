@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-
 import "./libraries/Types.sol";
 
 contract ApplicantManager{
-
 //errors
 
 error ApplicantAlreadyExists();
@@ -35,8 +33,6 @@ error UnauthorisedOperation();
 
 error RequestManagerAlreadySet();
 
-error CertificateManagerAlreadySet();
-
 error NotOwner();
 
 error EmploymentAlreadyExists();
@@ -49,7 +45,6 @@ error EmploymentManagerAlreadySet();
 
 
 //events
-
 event ApplicantCreated(address  indexed applicantaddress);
 
 event CertificateAdded(address indexed student,bytes32 indexed certificateHash,address indexed issuer);
@@ -60,22 +55,22 @@ event Projectadded( address indexed student,bytes32 indexed  projectHash );
 
 event Projectverified(address indexed verifier,bytes32 indexed projecthash);
 
-event ProjectVerificationRevoked(address indexed verifier,bytes32 indexed projectHash);
+ event ProjectVerificationRevoked(address indexed verifier,bytes32 indexed projectHash);
 
-event EmploymentAdded(address indexed student,bytes32 indexed employmentHash,address indexed organisation);
+ event EmploymentAdded(address indexed student,bytes32 indexed employmentHash,address indexed organisation);
 
 event EmploymentTerminated(bytes32 indexed employmentHash,address indexed organisation);
 
 
-//variables
+ //variables
 
 address public employmentManager;
 address public requestManager;
-address public certificateManager;
 address public immutable owner;
 
 
 //structs
+
 
 struct Certificate {
     bytes32 certificateHash;
@@ -93,6 +88,8 @@ struct Project {
     Types.Verification[] verifications;
 }
 
+
+
 struct Employment {
     bool exists;
     bytes32 employmentHash;
@@ -102,12 +99,16 @@ struct Employment {
     uint64 endedAt;
 }
 
+
+
 struct Applicant {
     bool exists;
     bytes32[] certificates;
     bytes32[] projects;
     bytes32[] employments;
 }
+
+
 
 
 //mapping
@@ -120,48 +121,33 @@ mapping(bytes32 => Project) public projects;
 
 mapping(bytes32 => Employment) public employments;
 
-
 //modifier
+
+
 
 modifier onlyOwner() {
     if (msg.sender != owner) revert NotOwner();
     _;
 }
-
 modifier onlyRequestManager(){
     if(msg.sender!=requestManager){
         revert UnauthorisedOperation();
     }
     _;
 }
-
-modifier onlyCertificateIssuer(){
-    if(
-        msg.sender != requestManager &&
-        msg.sender != certificateManager
-    ){
-        revert UnauthorisedOperation();
-    }
-    _;
-}
-
 modifier onlyEmploymentManager(){
     if(msg.sender!=employmentManager){
         revert UnauthorisedOperation();
     }
     _;
 }
-
-
 //constructor
 
 constructor() {
     owner = msg.sender;
 }
 
-
 //owner sets reqmanager
-
 function setRequestManager(address _requestManager)
     external
     onlyOwner
@@ -172,24 +158,7 @@ function setRequestManager(address _requestManager)
 
     requestManager = _requestManager;
 }
-
-
-//owner sets certificate manager
-
-function setCertificateManager(address _certificateManager)
-    external
-    onlyOwner
-{
-    if (certificateManager != address(0)) {
-        revert CertificateManagerAlreadySet();
-    }
-
-    certificateManager = _certificateManager;
-}
-
-
 //sets employmanager 
-
 function setEmploymentManager(address _employmentManager) external onlyOwner {
     if (employmentManager != address(0)) revert EmploymentManagerAlreadySet();
     employmentManager = _employmentManager;
@@ -200,7 +169,6 @@ function setEmploymentManager(address _employmentManager) external onlyOwner {
 //applicant
 
 //directly called by appllicant
-
 function createApplicant() external {
 
     if(applicants[msg.sender].exists){
@@ -214,37 +182,39 @@ function createApplicant() external {
 
 
 //certificate
-
 function addCertificate(
     address student,
     bytes32 certificateHash,
     Types.CredentialType credentialType,
     address issuer,
     uint64 expiresAt
-) external onlyCertificateIssuer{
+) external onlyRequestManager{
 
     if (!applicants[student].exists) {
         revert ApplicantNotFound();
     }
 
-    if (
-        credentialType == Types.CredentialType.Project
-    ) {
-        revert InvalidCredentialType();
-    }
+if (
+    credentialType == Types.CredentialType.Project
+) {
+    revert InvalidCredentialType();
+}
 
-    if (
-        expiresAt != 0 &&
-        expiresAt <= block.timestamp
-    ){
+
+if (
+    expiresAt != 0 &&
+    expiresAt <= block.timestamp
+){
         revert InvalidExpiry();
-    }
+}
 
-    Certificate storage cert = certificates[certificateHash];
 
-    if (cert.issuer != address(0)) {
-        revert CertificateAlreadyExists();
-    }
+Certificate storage cert = certificates[certificateHash];
+
+if (cert.issuer != address(0)) {
+    revert CertificateAlreadyExists();
+}
+
 
     certificates[certificateHash] = Certificate({
         certificateHash: certificateHash,
@@ -254,11 +224,12 @@ function addCertificate(
         expiresAt: expiresAt,
         revoked: false
     });
-
+    
     applicants[student].certificates.push(certificateHash);
 
     emit CertificateAdded(student,certificateHash,issuer);
 }
+
 
 
 
@@ -277,15 +248,13 @@ function revokeCertificate(bytes32 certificateHash) external onlyRequestManager{
     emit CertificateRevoked(certificateHash, cert.issuer);
 }
 
-
 //project
 
-//addproject directly called by the applicant no req needed
 
+//addproject directly called by the applicant no req needed
 function addProject(
     bytes32 projectHash
 ) external {
-
     address student=msg.sender;
 
     if (!applicants[student].exists) {
@@ -296,12 +265,11 @@ function addProject(
         revert ProjectAlreadyExists();
     }
 
-    Project storage project = projects[projectHash];
+Project storage project = projects[projectHash];
 
-    project.exists = true;
-    project.projectHash = projectHash;
-    project.owner = student;
-
+project.exists = true;
+project.projectHash = projectHash;
+project.owner = student;
     applicants[student].projects.push(projectHash);
 
     emit Projectadded(student, projectHash);
@@ -336,6 +304,8 @@ function addProjectVerification(
             revoked: false
         })
     );
+
+
 
     emit Projectverified(verifier,projectHash);
 }
@@ -383,6 +353,7 @@ function revokeProjectVerification(
 
 //employment
 
+
 function addEmployment(
     address student,
     bytes32 employmentHash,
@@ -390,53 +361,54 @@ function addEmployment(
     address organisation
 ) external onlyEmploymentManager {
 
-    if (!applicants[student].exists)
-        revert ApplicantNotFound();
 
-    if (employments[employmentHash].exists)
-        revert EmploymentAlreadyExists();
 
-    Employment storage employment = employments[employmentHash];
+if (!applicants[student].exists)
+    revert ApplicantNotFound();
 
-    employment.exists = true;
-    employment.employmentHash = employmentHash;
-    employment.organisation = organisation;
-    employment.employmentType = employmentType;
-    employment.joinedAt = uint64(block.timestamp);
+if (employments[employmentHash].exists)
+    revert EmploymentAlreadyExists();
 
-    applicants[student].employments.push(employmentHash);
 
-    emit EmploymentAdded(student,employmentHash,organisation);
+
+Employment storage employment = employments[employmentHash];
+
+employment.exists = true;
+employment.employmentHash = employmentHash;
+employment.organisation = organisation;
+employment.employmentType = employmentType;
+employment.joinedAt = uint64(block.timestamp);
+
+applicants[student].employments.push(employmentHash);
+
+emit EmploymentAdded(student,employmentHash,organisation);
+
 }
 
-
 function endEmployment(bytes32 employmentHash) external onlyEmploymentManager{
+Employment storage employment = employments[employmentHash];
 
-    Employment storage employment = employments[employmentHash];
+if (!employment.exists)
+    revert EmploymentNotFound();
 
-    if (!employment.exists)
-        revert EmploymentNotFound();
+if (employment.endedAt != 0)
+    revert EmploymentAlreadyTerminated();
 
-    if (employment.endedAt != 0)
-        revert EmploymentAlreadyTerminated();
+employment.endedAt = uint64(block.timestamp);
 
-    employment.endedAt = uint64(block.timestamp);
-
-    emit EmploymentTerminated(employmentHash,employment.organisation);
+emit EmploymentTerminated(employmentHash,employment.organisation);
 }
 
 
 //getters
-
 function isProjectVerified(bytes32 projectHash)
     public
     view
     returns (bool)
 {
     if (!projects[projectHash].exists) {
-        revert ProjectNotFound();
-    }
-
+    revert ProjectNotFound();
+}
     Project storage project = projects[projectHash];
 
     for (uint256 i = 0; i < project.verifications.length; i++) {
@@ -457,40 +429,36 @@ function getProjectVerifications(
     returns (Types.Verification[] memory)
 {
     if (!projects[projectHash].exists) {
-        revert ProjectNotFound();
-    }
-
+    revert ProjectNotFound();
+}
     return projects[projectHash].verifications;
 }
-
 
 function getCertificates(address student)
     external
     view
-    returns(bytes32[] memory)
-{
-    if (!applicants[student].exists) {
-        revert ApplicantNotFound();
+    returns(bytes32[] memory){
+        if (!applicants[student].exists) {
+    revert ApplicantNotFound();
+}
+        return applicants[student].certificates;
     }
 
-    return applicants[student].certificates;
-}
 
-
-function getProjects(address student)
+    function getProjects(address student)
     external
     view
-    returns(bytes32[] memory)
-{
-    if (!applicants[student].exists) {
-        revert ApplicantNotFound();
-    }
-
-    return applicants[student].projects;
+    returns(bytes32[] memory){
+         if (!applicants[student].exists) {
+    revert ApplicantNotFound();
 }
 
+return applicants[student].projects;
 
-function getEmployments(address student)
+    }
+
+
+    function getEmployments(address student)
     external
     view
     returns (bytes32[] memory)
@@ -501,8 +469,6 @@ function getEmployments(address student)
 
     return applicants[student].employments;
 }
-
-
 function isEmploymentActive(
     bytes32 employmentHash
 )
@@ -520,13 +486,13 @@ function isEmploymentActive(
 
 
 //checking during login
-
-function applicantExists(address student)
+    function applicantExists(address student)
     external
     view
     returns (bool)
 {
     return applicants[student].exists;
 }
+
 
 }

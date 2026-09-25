@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-
 import "./libraries/Types.sol";
 import "./ApplicantManager.sol";
 import "./OrganisationRegistry.sol";
@@ -24,7 +23,7 @@ contract RequestManager {
     //constructor
     constructor(address applicantManagerAddress,address orgRegistryaddress) {
         applicantManager = ApplicantManager(applicantManagerAddress);
-        organisationRegistry = OrganisationRegistry(orgRegistryaddress);
+        organisationRegistry= OrganisationRegistry(orgRegistryaddress);
     }
 
     //struct
@@ -43,8 +42,9 @@ contract RequestManager {
     //statevars
     mapping(uint256 => Request) public requests;
 
-    mapping(address => uint256[]) private outgoingRequests;
-    mapping(address => uint256[]) private incomingRequests;
+
+mapping(address => uint256[]) private outgoingRequests;
+mapping(address => uint256[]) private incomingRequests;
 
     // credentialHash -> expectedVerifier -> requestType -> requestId
     mapping(bytes32 => mapping(address => mapping(Types.RequestType => uint256)))
@@ -52,7 +52,7 @@ contract RequestManager {
 
     uint256 public nextRequestId;
 
-    //contracts
+//contracts
     ApplicantManager public immutable applicantManager;
     OrganisationRegistry public immutable organisationRegistry;
 
@@ -80,7 +80,6 @@ contract RequestManager {
         ) {
             revert InvalidExpiry();
         }
-
         if (!organisationRegistry.isActiveOrganisation(_expectedVerifier)) {
             revert InvalidIssuer();
         }
@@ -99,8 +98,8 @@ contract RequestManager {
             expiresAt: _expiresAt
         });
 
-        outgoingRequests[msg.sender].push(_id);
-        incomingRequests[_expectedVerifier].push(_id);
+outgoingRequests[msg.sender].push(_id);
+incomingRequests[_expectedVerifier].push(_id);
 
         activeRequests[_credentialHash][_expectedVerifier][_requestType] = _id;
 
@@ -116,7 +115,8 @@ contract RequestManager {
         if (credentialType == Types.CredentialType.Project) {
 
             if (
-                requestType != Types.RequestType.AddProjectVerification
+                requestType != Types.RequestType.AddProjectVerification &&
+                requestType != Types.RequestType.RevokeProjectVerification
             ) {
                 revert InvalidRequestType();
             }
@@ -124,7 +124,8 @@ contract RequestManager {
         } else {
 
             if (
-                requestType != Types.RequestType.AddCertificate
+                requestType != Types.RequestType.AddCertificate &&
+                requestType != Types.RequestType.RevokeCertificate
             ) {
                 revert InvalidRequestType();
             }
@@ -175,11 +176,17 @@ contract RequestManager {
 
             _approveCertificate(request);
 
-        } else if (
-            request.requestType == Types.RequestType.AddProjectVerification
-        ) {
+        } else if (request.requestType == Types.RequestType.RevokeCertificate) {
+
+            _revokeCertificate(request);
+
+        } else if (request.requestType == Types.RequestType.AddProjectVerification) {
 
             _approveProjectVerification(request);
+
+        } else if (request.requestType == Types.RequestType.RevokeProjectVerification) {
+
+            _revokeProjectVerification(request);
 
         } else {
 
@@ -192,7 +199,6 @@ contract RequestManager {
     }
 
     function rejectRequest(uint256 requestId) external {
-
         Request storage request = _validateRequest(requestId);
 
         _closeRequest(request, Types.RequestStatus.Rejected);
@@ -215,6 +221,15 @@ contract RequestManager {
         );
     }
 
+    function _revokeCertificate(
+        Request storage request
+    ) internal {
+
+        applicantManager.revokeCertificate(
+            request.credentialHash
+        );
+    }
+
     function _approveProjectVerification(
         Request storage request
     ) internal {
@@ -225,19 +240,33 @@ contract RequestManager {
         );
     }
 
-    function getIssuerRequests()
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return incomingRequests[msg.sender];
-    }
+    function _revokeProjectVerification(
+        Request storage request
+    ) internal {
 
-    function getStudentRequests()
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return outgoingRequests[msg.sender];
+        applicantManager.revokeProjectVerification(
+            request.credentialHash,
+            msg.sender
+        );
     }
+function getIssuerRequests()
+    external
+    view
+    returns (uint256[] memory)
+{
+  
+    return incomingRequests[msg.sender];
+}
+
+function getStudentRequests()
+    external
+    view
+    returns (uint256[] memory)
+{
+    return outgoingRequests[msg.sender];
+}
+
+
+
+
 }
