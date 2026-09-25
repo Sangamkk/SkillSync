@@ -10,23 +10,17 @@ async function main() {
   );
 
   const applicantManager = await ApplicantManager.deploy();
-
   await applicantManager.waitForDeployment();
 
   const applicantManagerAddress =
     await applicantManager.getAddress();
 
-  console.log(
-    "ApplicantManager:",
-    applicantManagerAddress
-  );
+  console.log("ApplicantManager:", applicantManagerAddress);
 
   // ---------------- Organisation Registry ----------------
 
   const OrganisationRegistry =
-    await hre.ethers.getContractFactory(
-      "OrganisationRegistry"
-    );
+    await hre.ethers.getContractFactory("OrganisationRegistry");
 
   const organisationRegistry =
     await OrganisationRegistry.deploy();
@@ -44,9 +38,7 @@ async function main() {
   // ---------------- Request Manager ----------------
 
   const RequestManager =
-    await hre.ethers.getContractFactory(
-      "RequestManager"
-    );
+    await hre.ethers.getContractFactory("RequestManager");
 
   const requestManager =
     await RequestManager.deploy(
@@ -59,17 +51,12 @@ async function main() {
   const requestManagerAddress =
     await requestManager.getAddress();
 
-  console.log(
-    "RequestManager:",
-    requestManagerAddress
-  );
+  console.log("RequestManager:", requestManagerAddress);
 
   // ---------------- Employment Manager ----------------
 
   const EmploymentManager =
-    await hre.ethers.getContractFactory(
-      "EmploymentManager"
-    );
+    await hre.ethers.getContractFactory("EmploymentManager");
 
   const employmentManager =
     await EmploymentManager.deploy(
@@ -85,6 +72,27 @@ async function main() {
   console.log(
     "EmploymentManager:",
     employmentManagerAddress
+  );
+
+  // ---------------- Certificate Manager ----------------
+
+  const CertificateManager =
+    await hre.ethers.getContractFactory("CertificateManager");
+
+  const certificateManager =
+    await CertificateManager.deploy(
+      applicantManagerAddress,
+      organisationRegistryAddress
+    );
+
+  await certificateManager.waitForDeployment();
+
+  const certificateManagerAddress =
+    await certificateManager.getAddress();
+
+  console.log(
+    "CertificateManager:",
+    certificateManagerAddress
   );
 
   // ---------------- Wiring Contracts ----------------
@@ -103,24 +111,36 @@ async function main() {
   );
   await tx.wait();
 
+  tx = await applicantManager.setCertificateManager(
+    certificateManagerAddress
+  );
+  await tx.wait();
+
   console.log("Contracts linked successfully.\n");
 
+  // ---------------- Final Addresses ----------------
+
   console.log("====================================");
-
-  console.log("ApplicantManager :", applicantManagerAddress);
-
   console.log(
-    "OrganisationRegistry :",
+    "ApplicantManager       :",
+    applicantManagerAddress
+  );
+  console.log(
+    "OrganisationRegistry   :",
     organisationRegistryAddress
   );
-
-  console.log("RequestManager :", requestManagerAddress);
-
   console.log(
-    "EmploymentManager :",
+    "RequestManager         :",
+    requestManagerAddress
+  );
+  console.log(
+    "EmploymentManager      :",
     employmentManagerAddress
   );
-
+  console.log(
+    "CertificateManager     :",
+    certificateManagerAddress
+  );
   console.log("====================================");
 }
 
