@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import { getPendingProjects, updateProjectStatus } from "../../services/projectService";
-import {
-    getIssuerRequests,
-    approveVerificationRequest,
-    rejectVerificationRequest
-} from "../../services/requestService";
 import MeshBackground from "../../components/common/MeshBackground";
 import { Link } from "react-router-dom";
 
 const PendingProjects = () => {
 
     const [projects, setProjects] = useState([]);
-    const [issuerRequests, setIssuerRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
     const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
+
 
     const [darkMode] = useState(() => {
         return localStorage.getItem("skillsync-theme") !== "light";
@@ -27,14 +22,8 @@ const PendingProjects = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [pendingData, reqs] = await Promise.all([
-                getPendingProjects().catch(() => []),
-                getIssuerRequests().catch(() => [])
-            ]);
-            console.log("Pending Projects:", pendingData);
-            console.log("Issuer on-chain requests:", reqs);
+            const pendingData = await getPendingProjects().catch(() => []);
             setProjects(pendingData || []);
-            setIssuerRequests(reqs || []);
         } catch (error) {
             console.error("Failed to load pending projects:", error);
         } finally {
@@ -42,44 +31,21 @@ const PendingProjects = () => {
         }
     };
 
-    const findOnChainRequestId = (project) => {
-        const rawHash = (project.githubHash || "").toLowerCase();
-        const formattedHash = rawHash.startsWith("0x") ? rawHash : "0x" + rawHash;
-
-        const matchedReq = issuerRequests.find((r) => {
-            const rHash = (r.credentialHash || "").toLowerCase();
-            return rHash === formattedHash || rHash === rawHash;
-        });
-
-        return matchedReq ? matchedReq.id : null;
-    };
-
     const handleApprove = async (project) => {
         const projId = project._id;
         setProcessingId(projId);
-        setStatusMessage({ id: projId, text: "Finding on-chain verification request...", type: "info" });
+        setStatusMessage({ id: projId, text: "Processing approval…", type: "info" });
 
         try {
-            const reqId = findOnChainRequestId(project);
-            if (reqId === null || reqId === undefined) {
-                throw new Error("No matching on-chain verification request was found for this project.");
-            }
+            // Backend handles blockchain transaction internally
+            const result = await updateProjectStatus(projId, "APPROVED", null, "");
+            const txHash = result?.transactionHash || result?.txHash || "";
 
             setStatusMessage({
                 id: projId,
-                text: `Prompting MetaMask to approve request #${reqId.toString()} on-chain...`,
-                type: "info"
-            });
-
-            const txHash = await approveVerificationRequest(reqId);
-            console.log("On-chain approval tx:", txHash);
-
-            setStatusMessage({ id: projId, text: "Updating database verification status...", type: "info" });
-            await updateProjectStatus(projId, "APPROVED", txHash, "");
-
-            setStatusMessage({
-                id: projId,
-                text: `✓ Project verified successfully. Tx: ${txHash.slice(0, 14)}...`,
+                text: txHash
+                    ? `✓ Project approved. Tx: ${txHash.slice(0, 14)}…`
+                    : "✓ Project approved successfully.",
                 type: "success"
             });
 
@@ -89,7 +55,7 @@ const PendingProjects = () => {
             }, 1500);
         } catch (error) {
             console.error("Project approval error:", error);
-            const errText = error.shortMessage || error.reason || error.message || "Approval failed";
+            const errText = error.response?.data?.message || error.message || "Approval failed";
             setStatusMessage({ id: projId, text: `❌ ${errText}`, type: "error" });
         } finally {
             setProcessingId(null);
@@ -109,26 +75,13 @@ const PendingProjects = () => {
 
         const projId = project._id;
         setProcessingId(projId);
-        setStatusMessage({ id: projId, text: "Processing rejection...", type: "info" });
+        setStatusMessage({ id: projId, text: "Processing rejection…", type: "info" });
 
         try {
-            const reqId = findOnChainRequestId(project);
-            if (reqId === null || reqId === undefined) {
-                throw new Error("No matching on-chain verification request was found for this project.");
-            }
+            // Backend handles blockchain transaction internally
+            await updateProjectStatus(projId, "REJECTED", null, reason);
 
-            setStatusMessage({
-                id: projId,
-                text: `Prompting MetaMask to reject request #${reqId.toString()} on-chain...`,
-                type: "info"
-            });
-
-            const txHash = await rejectVerificationRequest(reqId);
-            console.log("On-chain rejection tx:", txHash);
-
-            await updateProjectStatus(projId, "REJECTED", txHash, reason);
-
-            setStatusMessage({ id: projId, text: "Project verification rejected.", type: "success" });
+            setStatusMessage({ id: projId, text: "✓ Project verification rejected.", type: "success" });
 
             setTimeout(() => {
                 loadData();
@@ -136,7 +89,7 @@ const PendingProjects = () => {
             }, 1500);
         } catch (error) {
             console.error("Project rejection error:", error);
-            const errText = error.shortMessage || error.reason || error.message || "Rejection failed";
+            const errText = error.response?.data?.message || error.message || "Rejection failed";
             setStatusMessage({ id: projId, text: `❌ ${errText}`, type: "error" });
         } finally {
             setProcessingId(null);

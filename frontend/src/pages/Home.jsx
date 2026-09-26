@@ -288,7 +288,7 @@ const Home = () => {
                                             : "border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
                                             }`}
                                     >
-                                        🦊 Connect MetaMask
+                                        🔑 Sign In
                                     </button>
 
                                 </div>
@@ -741,7 +741,7 @@ const Home = () => {
                                 {
                                     number: "01",
                                     title: "Create your identity",
-                                    text: "Register your account and connect your MetaMask wallet.",
+                                    text: "Register with your email and password to get started.",
                                 },
                                 {
                                     number: "02",
@@ -818,7 +818,7 @@ const Home = () => {
                         {[
                             "Ethereum",
                             "Sepolia",
-                            "MetaMask",
+                            "Node.js",
                             "MongoDB Atlas",
                             "Cloudinary",
                             "React",

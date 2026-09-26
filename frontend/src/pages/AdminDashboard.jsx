@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
-import { registerOrganisation } from "../services/organisationBlockchain";
 import {
     getPendingApplications,
     approveOrganisation,
     rejectOrganisation,
 } from "../services/adminService";
-import { OrganizationType } from "../utils/enums";
 import MeshBackground from "../components/common/MeshBackground";
 
 const AdminDashboard = () => {
@@ -33,26 +31,19 @@ const AdminDashboard = () => {
 
     const handleApprove = async (app) => {
         setLoadingId(app._id);
-        setStatusMessage({ id: app._id, text: "Prompting MetaMask transaction...", type: "info" });
+        setStatusMessage({ id: app._id, text: "Approving application...", type: "info" });
 
         try {
-            const orgTypeEnum = OrganizationType[app.organisationType] ?? 0;
-            console.log(`Registering org on-chain: ${app.walletAddress} with type ${app.organisationType} (enum ${orgTypeEnum})`);
+            await approveOrganisation(app._id);
 
-            setStatusMessage({ id: app._id, text: "Waiting for blockchain confirmation on Polygon/Ethereum...", type: "info" });
-            const txHash = await registerOrganisation(app.walletAddress, orgTypeEnum);
-
-            setStatusMessage({ id: app._id, text: `Transaction confirmed (${txHash.slice(0, 10)}...). Synchronizing database...`, type: "info" });
-            await approveOrganisation(app._id, txHash);
-
-            setStatusMessage({ id: app._id, text: `✓ Successfully Approved on-chain! Tx: ${txHash}`, type: "success" });
+            setStatusMessage({ id: app._id, text: "✓ Organisation Approved", type: "success" });
             setTimeout(() => {
                 fetchApplications();
                 setStatusMessage({ id: null, text: "", type: "" });
             }, 1500);
         } catch (error) {
             console.error("Approval error:", error);
-            const errText = error.shortMessage || error.reason || error.message || "Approval failed";
+            const errText = error.response?.data?.message || error.message || "Approval failed";
             setStatusMessage({ id: app._id, text: `❌ ${errText}`, type: "error" });
         } finally {
             setLoadingId(null);
@@ -385,33 +376,6 @@ const AdminDashboard = () => {
 
                                     </div>
 
-
-                                    {/* Wallet */}
-
-                                    <div
-                                        className={`rounded-2xl p-4 ${
-                                            darkMode
-                                                ? "bg-white/[0.03]"
-                                                : "bg-slate-50"
-                                        }`}
-                                    >
-
-                                        <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                                            Wallet Address
-                                        </p>
-
-                                        <p
-                                            className={`mt-2 break-all font-mono text-xs ${
-                                                darkMode
-                                                    ? "text-slate-300"
-                                                    : "text-slate-600"
-                                            }`}
-                                        >
-                                            {app.walletAddress}
-                                        </p>
-
-                                    </div>
-
                                 </div>
 
                                 {/* ================= ORGANISATION-SPECIFIC DETAILS ================= */}
@@ -482,7 +446,7 @@ const AdminDashboard = () => {
                                             handleApprove(app)
                                         }
                                     >
-                                        {loadingId === app._id ? "Processing Blockchain Tx..." : "✓ Approve Organisation"}
+                                        {loadingId === app._id ? "Processing..." : "✓ Approve Organisation"}
                                     </button>
 
 

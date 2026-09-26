@@ -3,24 +3,34 @@ const hre = require("hardhat");
 async function main() {
   console.log("Deploying contracts...\n");
 
-  // ---------------- Applicant Manager ----------------
+  // --------------------------------------------------
+  // 1. Applicant Manager
+  // --------------------------------------------------
 
-  const ApplicantManager = await hre.ethers.getContractFactory(
-    "ApplicantManager"
-  );
+  const ApplicantManager =
+    await hre.ethers.getContractFactory("ApplicantManager");
 
-  const applicantManager = await ApplicantManager.deploy();
+  const applicantManager =
+    await ApplicantManager.deploy();
+
   await applicantManager.waitForDeployment();
 
   const applicantManagerAddress =
     await applicantManager.getAddress();
 
-  console.log("ApplicantManager:", applicantManagerAddress);
+  console.log(
+    "ApplicantManager:",
+    applicantManagerAddress
+  );
 
-  // ---------------- Organisation Registry ----------------
+  // --------------------------------------------------
+  // 2. Organisation Registry
+  // --------------------------------------------------
 
   const OrganisationRegistry =
-    await hre.ethers.getContractFactory("OrganisationRegistry");
+    await hre.ethers.getContractFactory(
+      "OrganisationRegistry"
+    );
 
   const organisationRegistry =
     await OrganisationRegistry.deploy();
@@ -35,10 +45,14 @@ async function main() {
     organisationRegistryAddress
   );
 
-  // ---------------- Request Manager ----------------
+  // --------------------------------------------------
+  // 3. Request Manager
+  // --------------------------------------------------
 
   const RequestManager =
-    await hre.ethers.getContractFactory("RequestManager");
+    await hre.ethers.getContractFactory(
+      "RequestManager"
+    );
 
   const requestManager =
     await RequestManager.deploy(
@@ -51,12 +65,19 @@ async function main() {
   const requestManagerAddress =
     await requestManager.getAddress();
 
-  console.log("RequestManager:", requestManagerAddress);
+  console.log(
+    "RequestManager:",
+    requestManagerAddress
+  );
 
-  // ---------------- Employment Manager ----------------
+  // --------------------------------------------------
+  // 4. Employment Manager
+  // --------------------------------------------------
 
   const EmploymentManager =
-    await hre.ethers.getContractFactory("EmploymentManager");
+    await hre.ethers.getContractFactory(
+      "EmploymentManager"
+    );
 
   const employmentManager =
     await EmploymentManager.deploy(
@@ -74,10 +95,14 @@ async function main() {
     employmentManagerAddress
   );
 
-  // ---------------- Certificate Manager ----------------
+  // --------------------------------------------------
+  // 5. Certificate Manager
+  // --------------------------------------------------
 
   const CertificateManager =
-    await hre.ethers.getContractFactory("CertificateManager");
+    await hre.ethers.getContractFactory(
+      "CertificateManager"
+    );
 
   const certificateManager =
     await CertificateManager.deploy(
@@ -95,52 +120,92 @@ async function main() {
     certificateManagerAddress
   );
 
-  // ---------------- Wiring Contracts ----------------
+  // --------------------------------------------------
+  // 6. Wire Manager Contracts
+  // --------------------------------------------------
 
   console.log("\nLinking contracts...\n");
 
   let tx;
 
+  // ApplicantManager -> RequestManager
   tx = await applicantManager.setRequestManager(
     requestManagerAddress
   );
   await tx.wait();
 
+  console.log("RequestManager linked.");
+
+  // ApplicantManager -> EmploymentManager
   tx = await applicantManager.setEmploymentManager(
     employmentManagerAddress
   );
   await tx.wait();
 
+  console.log("EmploymentManager linked.");
+
+  // ApplicantManager -> CertificateManager
   tx = await applicantManager.setCertificateManager(
     certificateManagerAddress
   );
   await tx.wait();
 
-  console.log("Contracts linked successfully.\n");
+  console.log("CertificateManager linked.");
 
-  // ---------------- Final Addresses ----------------
+  // --------------------------------------------------
+  // 7. Verify Wiring
+  // --------------------------------------------------
 
-  console.log("====================================");
+  console.log("\nVerifying contract wiring...\n");
+
   console.log(
-    "ApplicantManager       :",
+    "RequestManager:",
+    await applicantManager.requestManager()
+  );
+
+  console.log(
+    "EmploymentManager:",
+    await applicantManager.employmentManager()
+  );
+
+  console.log(
+    "CertificateManager:",
+    await applicantManager.certificateManager()
+  );
+
+  // --------------------------------------------------
+  // 8. Deployment Summary
+  // --------------------------------------------------
+
+  console.log("\n====================================");
+  console.log("       DEPLOYMENT COMPLETE");
+  console.log("====================================");
+
+  console.log(
+    "ApplicantManager      :",
     applicantManagerAddress
   );
+
   console.log(
     "OrganisationRegistry   :",
     organisationRegistryAddress
   );
+
   console.log(
-    "RequestManager         :",
+    "RequestManager        :",
     requestManagerAddress
   );
+
   console.log(
-    "EmploymentManager      :",
+    "EmploymentManager     :",
     employmentManagerAddress
   );
+
   console.log(
-    "CertificateManager     :",
+    "CertificateManager    :",
     certificateManagerAddress
   );
+
   console.log("====================================");
 }
 

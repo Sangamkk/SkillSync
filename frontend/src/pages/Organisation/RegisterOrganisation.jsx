@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { applyOrganisation } from "../../services/backendAuthentication/registerService";
+import { applyOrganisation } from "../../services/organisationService";
 import MeshBackground from "../../components/common/MeshBackground";
+
 
 const RegisterOrganisation = () => {
     const [darkMode] = useState(() => {
@@ -10,6 +11,8 @@ const RegisterOrganisation = () => {
     const [formData, setFormData] = useState({
         organisationName: "",
         email: "",
+        password: "",
+        confirmPassword: "",
         registrationNumber: "",
         organisationType: "Company",
     });
@@ -28,7 +31,6 @@ const RegisterOrganisation = () => {
         description: ""
     });
 
-    const [walletAddress, setWalletAddress] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: "", text: "" });
 
@@ -46,30 +48,13 @@ const RegisterOrganisation = () => {
         });
     };
 
-    const connectWallet = async () => {
-        try {
-            if (!window.ethereum) {
-                setMessage({ type: "error", text: "Please install MetaMask" });
-                return;
-            }
-
-            const accounts = await window.ethereum.request({
-                method: "eth_requestAccounts",
-            });
-
-            setWalletAddress(accounts[0]);
-            setMessage({ type: "success", text: "MetaMask wallet connected successfully!" });
-        } catch (error) {
-            console.error(error);
-            setMessage({ type: "error", text: error.message || "Failed to connect MetaMask" });
-        }
-    };
-
     const validateForm = () => {
         if (!formData.organisationName.trim()) return "Organization Name is required";
         if (!formData.email.trim()) return "Official Email is required";
+        if (!formData.password) return "Password is required";
+        if (formData.password.length < 8) return "Password must be at least 8 characters";
+        if (formData.password !== formData.confirmPassword) return "Passwords do not match";
         if (!formData.registrationNumber.trim()) return "Registration Number is required";
-        if (!walletAddress) return "Please connect your MetaMask wallet";
 
         // Type specific validation
         switch (formData.organisationType) {
@@ -119,10 +104,12 @@ const RegisterOrganisation = () => {
 
         setLoading(true);
         try {
+            const { confirmPassword, ...submitData } = formData;
             const response = await applyOrganisation({
-                ...formData,
+                ...submitData,
                 details,
-                walletAddress,
+                website: details.website,
+                description: details.description,
             });
 
             setMessage({ type: "success", text: response.message || "Application submitted successfully! Awaiting Admin review." });
@@ -130,6 +117,8 @@ const RegisterOrganisation = () => {
             setFormData({
                 organisationName: "",
                 email: "",
+                password: "",
+                confirmPassword: "",
                 registrationNumber: "",
                 organisationType: "Company",
             });
@@ -146,7 +135,6 @@ const RegisterOrganisation = () => {
                 jurisdiction: "",
                 description: ""
             });
-            setWalletAddress("");
         } catch (error) {
             console.error(error);
             setMessage({
@@ -236,8 +224,7 @@ const RegisterOrganisation = () => {
                             }`}
                         >
                             Join SkillSync and become part of a trusted
-                            credential verification network powered by
-                            blockchain technology.
+                            credential verification network.
                         </p>
 
 
@@ -281,7 +268,7 @@ const RegisterOrganisation = () => {
                             </div>
 
 
-                            {/* Blockchain Identity */}
+                            {/* Secure Identity */}
 
                             <div
                                 className={`flex items-center gap-4 rounded-2xl border p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 ${
@@ -292,13 +279,13 @@ const RegisterOrganisation = () => {
                             >
 
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-xl">
-                                    ⛓️
+                                    🔐
                                 </div>
 
                                 <div>
 
                                     <p className="font-semibold">
-                                        Blockchain Identity
+                                        Secure Identity
                                     </p>
 
                                     <p
@@ -308,7 +295,7 @@ const RegisterOrganisation = () => {
                                                 : "text-slate-500"
                                         }`}
                                     >
-                                        Connect your organization to a wallet
+                                        Your organization's identity is verified and secured
                                     </p>
 
                                 </div>
@@ -485,6 +472,70 @@ const RegisterOrganisation = () => {
                                         onChange={handleChange}
                                         placeholder="admin@google.com"
                                         required
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
+                                            darkMode
+                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-violet-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-violet-500/10"
+                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-violet-500/60 focus:ring-4 focus:ring-violet-500/10"
+                                        }`}
+                                    />
+
+                                </div>
+
+
+                                {/* PASSWORD */}
+
+                                <div>
+
+                                    <label
+                                        className={`mb-2 block text-sm font-medium ${
+                                            darkMode
+                                                ? "text-slate-300"
+                                                : "text-slate-700"
+                                        }`}
+                                    >
+                                        Password
+                                    </label>
+
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="•••••••• (min 8 characters)"
+                                        required
+                                        minLength={8}
+                                        className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
+                                            darkMode
+                                                ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-violet-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-violet-500/10"
+                                                : "border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-violet-500/60 focus:ring-4 focus:ring-violet-500/10"
+                                        }`}
+                                    />
+
+                                </div>
+
+
+                                {/* CONFIRM PASSWORD */}
+
+                                <div>
+
+                                    <label
+                                        className={`mb-2 block text-sm font-medium ${
+                                            darkMode
+                                                ? "text-slate-300"
+                                                : "text-slate-700"
+                                        }`}
+                                    >
+                                        Confirm Password
+                                    </label>
+
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        required
+                                        minLength={8}
                                         className={`w-full rounded-xl border px-4 py-3.5 outline-none transition duration-300 ${
                                             darkMode
                                                 ? "border-white/10 bg-white/[0.05] text-white placeholder-slate-600 focus:border-violet-500/60 focus:bg-white/[0.08] focus:ring-4 focus:ring-violet-500/10"
@@ -870,93 +921,6 @@ const RegisterOrganisation = () => {
                                 )}
 
 
-                                {/* WALLET SECTION */}
-
-                                <div
-                                    className={`rounded-2xl border p-4 ${
-                                        darkMode
-                                            ? "border-orange-500/10 bg-orange-500/[0.03]"
-                                            : "border-orange-200 bg-orange-50/60"
-                                    }`}
-                                >
-
-                                    <div className="mb-4 flex items-center gap-3">
-
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-xl">
-                                            🦊
-                                        </div>
-
-                                        <div>
-
-                                            <p className="text-sm font-semibold">
-                                                Blockchain Wallet
-                                            </p>
-
-                                            <p
-                                                className={`text-xs ${
-                                                    darkMode
-                                                        ? "text-slate-500"
-                                                        : "text-slate-500"
-                                                }`}
-                                            >
-                                                Connect your organization's MetaMask wallet
-                                            </p>
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <button
-                                        type="button"
-                                        onClick={connectWallet}
-                                        className={`w-full rounded-xl py-3.5 font-semibold transition duration-300 ${
-                                            walletAddress
-                                                ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
-                                                : "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/30"
-                                        }`}
-                                    >
-
-                                        {walletAddress
-                                            ? "✓ Wallet Connected"
-                                            : "🦊 Connect MetaMask"}
-
-                                    </button>
-
-
-                                    {/* CONNECTED WALLET */}
-
-                                    {walletAddress && (
-
-                                        <div className="mt-4">
-
-                                            <label
-                                                className={`mb-2 block text-xs font-medium uppercase tracking-wider ${
-                                                    darkMode
-                                                        ? "text-slate-500"
-                                                        : "text-slate-500"
-                                                }`}
-                                            >
-                                                Connected Wallet
-                                            </label>
-
-                                            <input
-                                                type="text"
-                                                value={walletAddress}
-                                                readOnly
-                                                className={`w-full rounded-xl border px-4 py-3 font-mono text-xs outline-none ${
-                                                    darkMode
-                                                        ? "border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-300"
-                                                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                }`}
-                                            />
-
-                                        </div>
-
-                                    )}
-
-                                </div>
-
                                 {/* ALERT MESSAGE BANNER */}
                                 {message.text && (
                                     <div
@@ -1007,7 +971,7 @@ const RegisterOrganisation = () => {
 
                                         <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
 
-                                        Wallet Verified
+                                        Identity Verified
 
                                     </span>
 

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getApplicantDetail } from "../../services/employmentService";
-import { getCertificates } from "../../services/certificateService";
-import { getApplicantProjectsDetailed, getStudentEmploymentOnChain } from "../../services/blockchainServices/blockchainService";
-import { getStudentProjects } from "../../services/projectService";
+import { getCandidateCertificates } from "../../services/certificateService";
+import { getCandidateProjects } from "../../services/projectService";
+import { getStudentEmploymentById } from "../../services/employmentService";
 import MeshBackground from "../../components/common/MeshBackground";
 
 const formatAddress = (value) => {
@@ -37,52 +37,28 @@ function ApplicantDetail() {
       setApplication(detail);
 
       const studentId = detail?.student?._id;
-      const walletAddress = detail?.student?.walletAddress;
 
-      const certificateResponse = studentId ? await getCertificates(studentId).catch(() => []) : [];
-      const resolvedCertificates = Array.isArray(certificateResponse) ? certificateResponse : [];
-      setCertificates(resolvedCertificates);
+      // Certificates — from REST API
+      const certRes = studentId ? await getCandidateCertificates(studentId).catch(() => []) : [];
+      setCertificates(Array.isArray(certRes?.certificates) ? certRes.certificates : Array.isArray(certRes) ? certRes : []);
 
-      let resolvedProjects = [];
-      let resolvedEmploymentHistory = { currentEmployment: [], previousEmployment: [] };
+      // Projects — from REST API
+      const projRes = studentId ? await getCandidateProjects(studentId).catch(() => []) : [];
+      const projList = Array.isArray(projRes?.projects) ? projRes.projects : Array.isArray(projRes) ? projRes : [];
+      setProjects(projList.map((p) => ({
+        ...p,
+        name: p.projectName || "Project",
+        hash: p.githubHash || p.projectHash || p._id || "",
+        isVerified: p.status === "APPROVED",
+        verificationHistory: p.verificationHistory || []
+      })));
 
-      if (walletAddress) {
-        try {
-          const projectMetadata = Array.isArray(await getStudentProjects(studentId).catch(() => [])) ? await getStudentProjects(studentId).catch(() => []) : [];
-          const projectMap = new Map(
-            (projectMetadata || []).map((project) => [normalizeHash(project.githubHash || project.projectHash || project._id), project])
-          );
-
-          const blockchainProjects = await getApplicantProjectsDetailed(walletAddress);
-          resolvedProjects = blockchainProjects.map((project) => {
-            const meta = projectMap.get(normalizeHash(project.hash)) || {};
-            return {
-              ...meta,
-              hash: project.hash,
-              name: meta.projectName || "Project",
-              projectType: meta.projectType || "Project",
-              githubLink: meta.githubLink || "",
-              description: meta.description || "",
-              isVerified: Boolean(project.isVerified),
-              onChainRegistered: true,
-              verificationHistory: (project.verifications || []).map((verification) => ({
-                label: verification.revoked ? "REVOKED" : "VERIFIED",
-                verifier: verification.verifier,
-                wallet: verification.verifier,
-                verifiedAt: Number(verification.verifiedAt),
-                revoked: Boolean(verification.revoked)
-              }))
-            };
-          });
-
-          resolvedEmploymentHistory = await getStudentEmploymentOnChain(walletAddress);
-        } catch (error) {
-          console.warn("Blockchain profile fetch failed:", error);
-        }
-      }
-
-      setProjects(resolvedProjects);
-      setEmploymentHistory(resolvedEmploymentHistory);
+      // Employment history — from REST API
+      const empRes = studentId ? await getStudentEmploymentById(studentId).catch(() => ({})) : {};
+      setEmploymentHistory({
+        currentEmployment: empRes?.currentEmployment || [],
+        previousEmployment: empRes?.previousEmployment || []
+      });
     } catch (error) {
       console.error("Applicant detail fetch error:", error);
       setApplication(null);
@@ -156,7 +132,7 @@ function ApplicantDetail() {
               <h2 className="text-xl font-bold">Projects & Verification History</h2>
               <div className="mt-5 space-y-4">
                 {projects.length === 0 ? (
-                  <p className="text-sm text-slate-400">No on-chain project records found for this applicant.</p>
+                  <p className="text-sm text-slate-400">No project records found for this applicant.</p>
                 ) : (
                   projects.map((project) => (
                     <div key={project.hash} className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-black/10" : "border-slate-200 bg-slate-50"}`}>
@@ -242,7 +218,7 @@ function ApplicantDetail() {
                 <div>
                   <p className="mb-2 text-sm font-semibold text-emerald-500">Current Employment</p>
                   {employmentHistory.currentEmployment.length === 0 ? (
-                    <p className="text-sm text-slate-400">No active employment record on-chain.</p>
+                    <p className="text-sm text-slate-400">No active employment record.</p>
                   ) : (
                     employmentHistory.currentEmployment.map((record) => (
                       <div key={record.hash || record.employmentHash} className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-slate-500">
@@ -258,7 +234,7 @@ function ApplicantDetail() {
                 <div>
                   <p className="mb-2 text-sm font-semibold text-violet-500">Previous Employment</p>
                   {employmentHistory.previousEmployment.length === 0 ? (
-                    <p className="text-sm text-slate-400">No previous employment record on-chain.</p>
+                    <p className="text-sm text-slate-400">No previous employment record.</p>
                   ) : (
                     employmentHistory.previousEmployment.map((record) => (
                       <div key={record.hash || record.employmentHash} className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-3 text-sm text-slate-500">

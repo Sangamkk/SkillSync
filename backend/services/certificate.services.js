@@ -1,14 +1,23 @@
 import Certificate from "../models/Certificate.js";
 
-export const uploadCertificateService = async (certificateData) => {
-
-    const certificate = await Certificate.create(certificateData);
+export const uploadCertificateService = async (data) => {
+    const certificate = await Certificate.create({
+        student: data.student,
+        issuer: data.issuer,
+        certificateName: data.certificateName,
+        certificateType: data.certificateType,
+        issueDate: data.issueDate,
+        expiryDate: data.expiryDate || null,
+        description: data.description || "",
+        certificateURL: data.certificateURL,
+        certificateHash: data.certificateHash,
+        blockchainStatus: "PENDING"
+    });
 
     return certificate;
-
 };
 
-export const  getStudentCertificatesService = async (studentId) => {
+export const getStudentCertificatesService = async (studentId) => {
 
     return await Certificate.find({
         student: studentId

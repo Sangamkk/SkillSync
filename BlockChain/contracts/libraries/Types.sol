@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 library Types {
-
     enum CredentialType {
         Certificate,
         Project,
@@ -20,35 +19,36 @@ library Types {
     }
 
     struct Verification {
-        address verifier;
+        bytes32 verifierId;
         uint64 verifiedAt;
         bool revoked;
     }
 
-enum RequestType {
-    AddCertificate,
-    RevokeCertificate,
-    AddProjectVerification,
-    RevokeProjectVerification,
-    AddEmployment,
-    TerminateEmployment
-}
-    
-enum OrganizationType {
-    Company,
-    University,
-    ResearchLab,
-    NGO,
-    Government,
-    Other
-}
+    enum RequestType {
+        AddCertificate,
+        RevokeCertificate,
+        AddProjectVerification,
+        RevokeProjectVerification,
+        AddEmployment,
+        TerminateEmployment
+    }
 
-enum EmploymentType {
-    Internship,
-    Employment
-}
-enum ApprovalType {
-    Organisation,
-    Student
-}
+    enum OrganizationType {
+        Company,
+        University,
+        ResearchLab,
+        NGO,
+        Government,
+        Other
+    }
+
+    enum EmploymentType {
+        Internship,
+        Employment
+    }
+
+    enum ApprovalType {
+        Organisation,
+        Student
+    }
 }

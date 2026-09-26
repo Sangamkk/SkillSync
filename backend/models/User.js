@@ -22,14 +22,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["STUDENT"],
+      enum: ["STUDENT", "ADMIN"],
       required: true,
-    },
-
-    walletAddress: {
-      type: String,
-      required: true,
-      unique: true,
     },
 
     usn: {
@@ -50,6 +44,34 @@ const userSchema = new mongoose.Schema(
     companyName: {
       type: String,
       default: "",
+    },
+
+    digiLockerVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Blockchain identity — bytes32 hex string
+    applicantId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    blockchainTxHash: {
+      type: String,
+      default: "",
+    },
+
+    blockchainBlockNumber: {
+      type: Number,
+      default: null,
+    },
+
+    blockchainStatus: {
+      type: String,
+      enum: ["PENDING", "CONFIRMED", "FAILED"],
+      default: "PENDING",
     },
   },
   {

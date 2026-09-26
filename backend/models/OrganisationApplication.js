@@ -10,13 +10,19 @@ const organisationApplicationSchema = new mongoose.Schema(
         email: {
             type: String,
             required: true,
-            unique: true
+            unique: true,
+            lowercase: true
         },
 
-        walletAddress: {
+        password: {
             type: String,
-            required: true,
-            unique: true
+            required: true
+        },
+
+        organisationId: {
+            type: String,
+            unique: true,
+            sparse: true
         },
 
         organisationType: {
@@ -34,7 +40,18 @@ const organisationApplicationSchema = new mongoose.Schema(
 
         registrationNumber: {
             type: String,
-            required: true
+            required: true,
+            unique: true
+        },
+
+        website: {
+            type: String,
+            default: ""
+        },
+
+        description: {
+            type: String,
+            default: ""
         },
 
         status: {
@@ -46,14 +63,20 @@ const organisationApplicationSchema = new mongoose.Schema(
             ],
             default: "Pending"
         },
-        role:{
-            type:String,
-            default:"ORGANISATION"
+
+        role: {
+            type: String,
+            default: "ORGANISATION"
         },
 
         txHash: {
             type: String,
             default: ""
+        },
+
+        blockchainBlockNumber: {
+            type: Number,
+            default: null
         },
 
         rejectionReason: {

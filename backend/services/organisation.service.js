@@ -1,128 +1,230 @@
+import bcrypt from "bcrypt";
+import { ethers } from "ethers";
 import OrganisationApplication from "../models/OrganisationApplication.js";
-import { generateToken } from "../utils/jwt.js"
+import { organisationRegistry } from "../blockchain/contracts.js";
 
+// ─── ORGANISATION TYPE MAP ────────────────────────────────────────────────────
+// Maps from OrganisationType string to Types.OrganizationType enum (0-5)
+const ORGANISATION_TYPE_MAP = {
+  Company: 0,
+  University: 1,
+  ResearchLab: 2,
+  NGO: 3,
+  Government: 4,
+  Other: 5,
+};
+
+// ─── REGISTER APPLICATION ─────────────────────────────────────────────────────
+/**
+ * Organisation registration — creates a PENDING application.
+ * No blockchain interaction yet — that happens on admin approval.
+ */
 export const createApplicationService = async (data) => {
-    const { email, walletAddress, registrationNumber } = data;
+  const {
+    organisationName,
+    email,
+    password,
+    organisationType,
+    registrationNumber,
+    website,
+    description,
+    details,
+  } = data;
 
-    // Check duplicate wallet
-    if (walletAddress) {
-        const existingWallet = await OrganisationApplication.findOne({
-            walletAddress: { $regex: new RegExp(`^${walletAddress}$`, "i") }
-        });
-        if (existingWallet) {
-            const error = new Error("This wallet is already registered or has a pending organization application.");
-            error.statusCode = 409;
-            throw error;
-        }
-    }
+  if (!organisationName || !email || !organisationType || !registrationNumber) {
+    const err = new Error(
+      "organisationName, email, organisationType and registrationNumber are required"
+    );
+    err.statusCode = 400;
+    throw err;
+  }
 
-    // Check duplicate email
-    if (email) {
-        const existingEmail = await OrganisationApplication.findOne({
-            email: { $regex: new RegExp(`^${email}$`, "i") }
-        });
-        if (existingEmail) {
-            const error = new Error("An organization application with this email already exists.");
-            error.statusCode = 409;
-            throw error;
-        }
-    }
+  // Use provided password or fallback default for backward compatibility
+  const rawPassword = password || data.details?.password || "OrgSecurePass123!";
 
-    // Check duplicate registration number
-    if (registrationNumber) {
-        const existingReg = await OrganisationApplication.findOne({
-            registrationNumber: registrationNumber.trim()
-        });
-        if (existingReg) {
-            const error = new Error("An organization application with this registration number already exists.");
-            error.statusCode = 409;
-            throw error;
-        }
-    }
+  const normalizedEmail = email.toLowerCase();
 
-    try {
-        const application = await OrganisationApplication.create(data);
-        return application;
-    } catch (err) {
-        if (err.code === 11000) {
-            const field = Object.keys(err.keyPattern || {})[0] || "field";
-            const error = new Error(
-                field === "walletAddress"
-                    ? "This wallet is already registered or has a pending organization application."
-                    : field === "email"
-                    ? "An organization application with this email already exists."
-                    : `This ${field} is already registered.`
-            );
-            error.statusCode = 409;
-            throw error;
-        }
-        throw err;
+  // Check duplicate email across both collections
+  const existingEmail = await OrganisationApplication.findOne({ email: normalizedEmail });
+  if (existingEmail) {
+    const err = new Error("An organisation with this email already exists.");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const existingReg = await OrganisationApplication.findOne({
+    registrationNumber: registrationNumber.trim(),
+  });
+  if (existingReg) {
+    const err = new Error("An organisation with this registration number already exists.");
+    err.statusCode = 409;
+    throw err;
+  }
+
+  const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+  const finalWebsite = website || details?.website || "";
+  const finalDescription = description || details?.description || "";
+
+  try {
+    const application = await OrganisationApplication.create({
+      organisationName: organisationName.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      organisationType,
+      registrationNumber: registrationNumber.trim(),
+      website: finalWebsite,
+      description: finalDescription,
+      details: details || {},
+      status: "Pending",
+    });
+
+    const appObj = application.toObject();
+    delete appObj.password;
+
+    return appObj;
+  } catch (err) {
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || "field";
+      const dupErr = new Error(`This ${field} is already registered.`);
+      dupErr.statusCode = 409;
+      throw dupErr;
     }
+    throw err;
+  }
 };
 
+// ─── GET PENDING APPLICATIONS ─────────────────────────────────────────────────
 export const getPendingApplicationsService = async () => {
-    return await OrganisationApplication.find({
-        status: "Pending"
-    }).sort({ createdAt: -1 });
+  const applications = await OrganisationApplication.find({ status: "Pending" })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Strip passwords
+  return applications.map((app) => {
+    const { password: _p, ...rest } = app;
+    return rest;
+  });
 };
 
-export const approveApplicationService = async (id, txHash) => {
-    return await OrganisationApplication.findByIdAndUpdate(
-        id,
-        {
-            status: "Approved",
-            txHash: txHash || ""
-        },
-        {
-            new: true
-        }
-    );
+// ─── APPROVE APPLICATION ──────────────────────────────────────────────────────
+/**
+ * Admin approves an organisation.
+ * Generates a bytes32 organisationId, registers on blockchain,
+ * waits for confirmation, then updates MongoDB.
+ */
+export const approveApplicationService = async (id) => {
+  const application = await OrganisationApplication.findById(id);
+
+  if (!application) {
+    const err = new Error("Organisation application not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  if (application.status !== "Pending") {
+    const err = new Error(`Application is already ${application.status}`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Generate a cryptographically random bytes32 organisationId
+  const organisationId = ethers.hexlify(ethers.randomBytes(32));
+
+  // Ensure no collision (astronomically unlikely but safe)
+  const existingOrg = await OrganisationApplication.findOne({ organisationId });
+  if (existingOrg) {
+    throw new Error("Organisation ID collision — please try again");
+  }
+
+  // Map organisationType to enum value
+  const orgTypeEnum = ORGANISATION_TYPE_MAP[application.organisationType] ?? 5;
+
+  console.log(
+    `[BLOCKCHAIN] Registering organisation ${organisationId} (${application.organisationType}=${orgTypeEnum})`
+  );
+
+  const transaction = await organisationRegistry.registerOrganisation(
+    organisationId,
+    orgTypeEnum
+  );
+
+  console.log(`[BLOCKCHAIN] Transaction submitted: ${transaction.hash}`);
+
+  const receipt = await transaction.wait();
+
+  const blockchainStatus = receipt.status === 1 ? "CONFIRMED" : "FAILED";
+
+  console.log(
+    `[BLOCKCHAIN] Organisation registration confirmed: ${receipt.hash}, status: ${blockchainStatus}`
+  );
+
+  if (blockchainStatus === "FAILED") {
+    throw new Error("Blockchain registration transaction failed");
+  }
+
+  application.status = "Approved";
+  application.organisationId = organisationId;
+  application.txHash = transaction.hash;
+  application.blockchainBlockNumber = receipt.blockNumber;
+  await application.save();
+
+  const appObj = application.toObject();
+  delete appObj.password;
+
+  return {
+    application: appObj,
+    blockchain: {
+      organisationId,
+      transactionHash: transaction.hash,
+      blockNumber: receipt.blockNumber,
+      status: blockchainStatus,
+    },
+  };
 };
 
+// ─── REJECT APPLICATION ───────────────────────────────────────────────────────
 export const rejectApplicationService = async (id, rejectionReason) => {
-    return await OrganisationApplication.findByIdAndUpdate(
-        id,
-        {
-            status: "Rejected",
-            rejectionReason: rejectionReason || "Application rejected by admin"
-        },
-        {
-            new: true
-        }
-    );
+  const application = await OrganisationApplication.findByIdAndUpdate(
+    id,
+    {
+      status: "Rejected",
+      rejectionReason: rejectionReason || "Application rejected by admin",
+    },
+    { new: true }
+  ).lean();
+
+  if (!application) {
+    const err = new Error("Organisation application not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const { password: _p, ...rest } = application;
+  return rest;
 };
 
-export const organisationLoginService = async (data) => {
-    const { walletAddress,role } = data;
-    const normalizedWallet = walletAddress.toLowerCase();
+// ─── GET VERIFIED ORGANISATIONS ───────────────────────────────────────────────
+export const getVerifiedOrganisationsService = async () => {
+  const organisations = await OrganisationApplication.find(
+    { status: "Approved" },
+    { password: 0 }
+  )
+    .sort({ organisationName: 1 })
+    .lean();
 
-    console.log("Searching in Database - orgLogin.")
-    const organisation = await OrganisationApplication.findOne({
-        walletAddress: normalizedWallet,
-        status: "Approved",
-        role
-    });
+  return organisations;
+};
 
-    if (!organisation) {
-        const error = new Error("Organization is not verified");
-        error.statusCode = 401;
-        throw error;
-    }
+// ─── GET ORGANISATION PROFILE ─────────────────────────────────────────────────
+export const getOrganisationProfileService = async (orgId) => {
+  const org = await OrganisationApplication.findById(orgId, { password: 0 }).lean();
 
-    const token = generateToken({
-        _id: organisation._id,
-        role: "ORGANISATION",
-        walletAddress: organisation.walletAddress
-    });
-    console.log("Sending the result - orgLogin.")
-    return {
-        token,
-        user: {
-            _id: organisation._id,
-            name: organisation.organisationName,
-            email: organisation.email,
-            role: organisation.role,
-            walletAddress: organisation.walletAddress
-        }
-    };
+  if (!org) {
+    const err = new Error("Organisation not found");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return org;
 };

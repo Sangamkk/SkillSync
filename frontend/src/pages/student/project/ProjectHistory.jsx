@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ethers } from "ethers";
 
-import { getProfile } from "../../../services/studentService";
 import { getStudentProjects } from "../../../services/projectService";
-import { getStudentProjectsFromBlockchain } from "../../../services/blockchainServices/blockchainService";
 
 import MeshBackground from "../../../components/common/MeshBackground";
-import ApplicantManagerAbi from "../../../abhi/ApplicantManager.json";
 
 
 /* =========================================================
@@ -366,8 +362,6 @@ const ProjectCard = ({ project, darkMode }) => {
 ========================================================= */
 
 const ProjectHistory = () => {
-    const [user, setUser] = useState(null);
-    const [studentId, setStudentId] = useState(null);
     const [projects, setProjects] = useState([]);
     const [selectedSection, setSelectedSection] = useState("ALL");
     const [loading, setLoading] = useState(true);
@@ -377,6 +371,7 @@ const ProjectHistory = () => {
             localStorage.getItem("skillsync-theme") !==
             "light"
     );
+
     /* =====================================================
        FETCH PROJECTS
     ===================================================== */
@@ -389,337 +384,31 @@ const ProjectHistory = () => {
         try {
             setLoading(true);
             setError("");
-            /* =============================================
-               GET LOGGED-IN USER
-            ============================================= */
-            const userStr = localStorage.getItem("user");
-            if (!userStr) {
-                setError("User session not found.");
-                return;
-            }
-            const userData = JSON.parse(userStr);
-            const walletAddress = userData.walletAddress;
-            if (!walletAddress) {
-                setError( "Wallet address not found." );
-                return;
-            }
-            /* =============================================
-               GET PROFILE
-            ============================================= */
-            const profile = await getProfile(walletAddress);
-            setUser(profile);
-            /*
-             * IMPORTANT:
-             *
-             * Do NOT use React state here:
-             *
-             * setStudentId(resolvedStudentId)
-             * getStudentProjects(studentId) ❌
-             *
-             * State updates are asynchronous.
-             *
-             * Use resolvedStudentId directly.
-             */
 
-            const resolvedStudentId =
-                profile?._id ||
-                userData.id ||
-                userData._id;
-            setStudentId(resolvedStudentId);
-            /* =============================================
-               GET MONGODB + BLOCKCHAIN DATA
-            ============================================= */
-            const [ mongoProjects, blockchainData ] = await Promise.all([
-                resolvedStudentId ? getStudentProjects( resolvedStudentId ).catch(() => []) : Promise.resolve([]),
-
-                getStudentProjectsFromBlockchain( walletAddress ).catch(() => ({
-                    projectHashes: []
-                }))
-            ]);
-            const mongoProjectList = normalizeToArray(mongoProjects);
-
-            const blockchainProjectHashes = normalizeToArray(
-                    blockchainData?.projectHashes ??
-                    blockchainData?.projects ??
-                    []
-                );
-            /* =============================================
-               CREATE MONGODB PROJECT MAP
-            ============================================= */
-            const metadataMap = new Map();
-
-            mongoProjectList.forEach((project) => {
-                const possibleHash = project.githubHash || project.projectHash;
-                const normalized = normalizeHash(possibleHash);
-                if (normalized) {
-                    metadataMap.set(
-                        normalized,
-                        project
-                    );
-                }
-            });
-            /* =============================================
-               CONNECT TO BLOCKCHAIN
-            ============================================= */
-
-            const provider = new ethers.JsonRpcProvider(
-                    import.meta.env.VITE_RPC_URL ||
-                    "https://ethereum-sepolia-rpc.publicnode.com"
-                );
-
-
-            const contract = new ethers.Contract(
-                    import.meta.env
-                        .VITE_APPLICANT_MANAGER_ADDRESS,
-                    ApplicantManagerAbi.abi,
-                    provider
-                );
-            /* =============================================
-               GET BLOCKCHAIN PROJECTS
-            ============================================= */
-            const blockchainRecords = await Promise.all(
-                    blockchainProjectHashes.map(
-                        async (projectHash) => {
-
-                            const normalizedHash = normalizeHash( projectHash );
-                            const metadata = metadataMap.get( normalizedHash ) || {};
-                            let isVerified = false;
-                            let verifications = [];
-                            try {
-                                isVerified = await contract .isProjectVerified( normalizedHash );
-                            } catch (err) {
-                                console.warn(
-                                    "Verification status fetch failed:",
-                                    normalizedHash,
-                                    err
-                                );
-                            }
-                            try {
-                                verifications = await contract .getProjectVerifications( normalizedHash );
-                            } catch (err) {
-                                console.warn(
-                                    "Verification history fetch failed:",
-                                    normalizedHash,
-                                    err
-                                );
-                            }
-                            const verificationHistory = Array.isArray( verifications )
-                                    ? verifications.map(
-                                        (entry) => ({
-
-                                            status:
-                                                entry.revoked
-                                                    ? "REVOKED"
-                                                    : "VERIFIED",
-
-                                            verifier:
-                                                entry.verifier,
-
-                                            verifiedAt:
-                                                Number(
-                                                    entry.verifiedAt
-                                                ),
-
-                                            revoked:
-                                                Boolean(
-                                                    entry.revoked
-                                                )
-
-                                        })
-                                    )
-                                    : [];
-
-
-                            return {
-
-                                /*
-                                 * MongoDB information
-                                 */
-
-                                ...metadata,
-
-                                projectName:
-                                    metadata.projectName ||
-                                    "Project",
-
-                                projectType:
-                                    metadata.projectType ||
-                                    "Project",
-
-                                githubHash:
-                                    metadata.githubHash ||
-                                    normalizedHash,
-
-                                githubLink:
-                                    metadata.githubLink ||
-                                    "",
-
-                                description:
-                                    metadata.description ||
-                                    "",
-
-
-                                /*
-                                 * Blockchain information
-                                 */
-
-                                hash:
-                                    normalizedHash,
-
-                                onChainRegistered:
-                                    true,
-
-                                isVerified,
-
-                                verificationHistory
-                            };
-
-                        }
-                    )
-                );
-
-
-            /* =============================================
-               MERGE MONGODB + BLOCKCHAIN PROJECTS
-            ============================================= */
-
-            const projectMap = new Map();
-            /*
-             * First add ALL MongoDB projects.
-             *
-             * This is what allows us to show
-             * "NOT REGISTERED".
-             */
-            mongoProjectList.forEach(
-                (metadata) => {
-
-                    const hash =
-                        normalizeHash(
-                            metadata.githubHash ||
-                            metadata.projectHash
-                        );
-                    /*
-                     * If no hash exists, use MongoDB _id
-                     * as the temporary map key.
-                     */
-                    const key =
-                        hash ||
-                        `mongo-${metadata._id}`;
-                    projectMap.set(
-                        key,
-                        {
-
-                            ...metadata,
-
-                            projectName:
-                                metadata.projectName ||
-                                "Project",
-
-                            projectType:
-                                metadata.projectType ||
-                                "Project",
-
-                            githubHash:
-                                metadata.githubHash ||
-                                metadata.projectHash ||
-                                "",
-
-                            githubLink:
-                                metadata.githubLink ||
-                                "",
-
-                            description:
-                                metadata.description ||
-                                "",
-
-                            hash,
-
-                            /*
-                             * Not found on blockchain yet.
-                             */
-
-                            onChainRegistered:
-                                false,
-
-                            isVerified:
-                                false,
-
-                            verificationHistory:
-                                []
-
-                        }
-                    );
-
-                }
-            );
-
-
-            /*
-             * Now overwrite / merge projects that
-             * actually exist on blockchain.
-             */
-
-            blockchainRecords.forEach(
-                (blockchainProject) => {
-
-                    const key =
-                        normalizeHash(
-                            blockchainProject.githubHash
-                        );
-
-
-                    const existing =
-                        projectMap.get(key);
-
-
-                    projectMap.set(
-                        key,
-                        {
-
-                            ...existing,
-
-                            ...blockchainProject,
-
-                            /*
-                             * Blockchain registration wins.
-                             */
-
-                            onChainRegistered:
-                                true
-
-                        }
-                    );
-
-                }
-            );
-
-
-            const finalProjects =
-                Array.from(
-                    projectMap.values()
-                );
-
-
-            setProjects(finalProjects);
-
+            // Get all projects from REST API.
+            // Backend enriches each project with blockchain data
+            // (onChainRegistered, isVerified, verificationHistory, transactionHash).
+            const raw = await getStudentProjects();
+            const list = normalizeToArray(raw);
+
+            const enriched = list.map((project) => ({
+                ...project,
+                projectName: project.projectName || "Project",
+                projectType: project.projectType || "Project",
+                githubHash: project.githubHash || project.projectHash || "",
+                hash: project.githubHash || project.projectHash || "",
+                onChainRegistered: project.onChainRegistered ?? (project.status === "APPROVED"),
+                isVerified: project.isVerified ?? (project.status === "APPROVED"),
+                verificationHistory: project.verificationHistory || []
+            }));
+
+            setProjects(enriched);
         } catch (err) {
-
-            console.error(
-                "Project history fetch error:",
-                err
-            );
-
-            setError(
-                err?.message ||
-                "Failed to load project history."
-            );
-
+            console.error("Project history fetch error:", err);
+            setError(err?.message || "Failed to load project history.");
         } finally {
-
             setLoading(false);
-
         }
-
     };
 
 

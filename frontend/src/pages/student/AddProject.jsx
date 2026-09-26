@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { createProject, updateProjectStatus } from "../../services/projectService";
-import { addProjectOnChain } from "../../services/blockchainServices/blockchainService";
+import { createProject } from "../../services/projectService";
 import MeshBackground from "../../components/common/MeshBackground";
 import { Link } from "react-router-dom";
+
 
 const AddProject = () => {
 
@@ -39,38 +39,18 @@ const AddProject = () => {
                 projectType: formData.projectType
             };
 
-            setStatusMessage({ type: "info", text: "1/2: Saving project metadata..." });
+            setStatusMessage({ type: "info", text: "Saving project…" });
             const response = await createProject(data);
-            console.log("Project saved in DB:", response);
 
-            const rawHash = response.project.githubHash;
-            const projectHash = rawHash.startsWith("0x") ? rawHash : "0x" + rawHash;
-            console.log("Project Hash (Bytes32):", projectHash);
-
-            // Step: Register project on-chain on ApplicantManager contract
-            let regTxHash;
-            try {
-                setStatusMessage({ type: "info", text: "2/2: Registering project on ApplicantManager contract... Please confirm transaction in MetaMask." });
-                regTxHash = await addProjectOnChain(projectHash);
-                console.log("Project registered on-chain:", regTxHash);
-            } catch (chainErr) {
-                console.error("Project registration failed:", chainErr);
-                const errMsg = chainErr.code === 4001 || chainErr.action === "sendTransaction"
-                    ? "Project registration cancelled."
-                    : (chainErr.shortMessage || chainErr.reason || chainErr.message || "Project registration failed.");
-                setStatusMessage({ type: "error", text: `❌ ${errMsg}` });
-                // STOP: Do NOT proceed if on-chain registration fails or is cancelled
-                return;
-            }
-
-            // Sync on-chain registration status in DB
-            await updateProjectStatus(response.project._id, null, regTxHash, "", {
-                onChainRegistered: true
-            });
+            // Backend automatically hashes and registers the project on-chain.
+            // No MetaMask required.
+            const txHash = response?.project?.transactionHash || response?.transactionHash || "";
 
             setStatusMessage({
                 type: "success",
-                text: `✓ Project successfully registered on-chain! Tx: ${regTxHash.slice(0, 16)}...`
+                text: txHash
+                    ? `✓ Project submitted! Tx: ${txHash.slice(0, 16)}…`
+                    : "✓ Project submitted successfully."
             });
 
             setFormData({

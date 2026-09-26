@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { uploadCertificate } from "../../services/certificateService";
-import { createVerificationRequest } from "../../services/requestService";
-import { getVerifiedOrganisations } from "../../services/adminService";
-import { CredentialType, RequestType } from "../../utils/enums";
+import { createVerificationRequest } from "../../services/verificationService";
+import { getVerifiedOrganisations } from "../../services/organisationService";
 import MeshBackground from "../../components/common/MeshBackground";
+
 
 const UploadCertificate = () => {
 
@@ -18,6 +18,7 @@ const UploadCertificate = () => {
     });
 
     const [organisations, setOrganisations] = useState([]);
+    const [selectedOrganisationId, setSelectedOrganisationId] = useState("");
     const [selectedIssuerWallet, setSelectedIssuerWallet] = useState("");
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -48,17 +49,19 @@ const UploadCertificate = () => {
     };
 
     const handleIssuerChange = (e) => {
-        const wallet = e.target.value;
-        setSelectedIssuerWallet(wallet);
+        const orgId = e.target.value;
+        setSelectedOrganisationId(orgId);
 
         const organisation = organisations.find(
-            (org) => org.walletAddress === wallet
+            (org) => org._id === orgId
         );
 
-        setFormData({
-            ...formData,
+        setSelectedIssuerWallet(organisation?.walletAddress || "");
+
+        setFormData((prev) => ({
+            ...prev,
             issuer: organisation?.organisationName || "",
-        });
+        }));
     };
 
     const handleFileChange = (e) => {
@@ -79,7 +82,7 @@ const UploadCertificate = () => {
             return;
         }
 
-        if (!selectedIssuerWallet) {
+        if (!selectedOrganisationId) {
             setStatusMessage({ type: "error", text: "Please select an issuing organisation." });
             return;
         }
@@ -98,50 +101,34 @@ const UploadCertificate = () => {
             data.append("description", formData.description);
             data.append("certificate", file);
             data.append("hasExpiry", formData.hasExpiry === "yes");
-
-            setStatusMessage({ type: "info", text: "Uploading certificate to Cloudinary and generating SHA-256 hash..." });
-            const response = await uploadCertificate(data);
-            console.log("Certificate uploaded:", response.certificate);
-
-            try {
-                const hash = response.hashBytes32;
-                setStatusMessage({ type: "info", text: "Prompting MetaMask to create on-chain verification request..." });
-
-                const txHash = await createVerificationRequest(
-                    hash,
-                    CredentialType.Certificate,
-                    RequestType.AddCertificate,
-                    selectedIssuerWallet,
-                    expiry
-                );
-
-                console.log("Verification request tx:", txHash);
-                setStatusMessage({
-                    type: "success",
-                    text: `✓ Certificate uploaded and verification request created on-chain! Tx: ${txHash.slice(0, 16)}...`
-                });
-
-                // Reset form
-                setFormData({
-                    certificateName: "",
-                    issuer: "",
-                    certificateType: "",
-                    issueDate: "",
-                    expiryDate: "",
-                    description: "",
-                    hasExpiry: "",
-                });
-                setSelectedIssuerWallet("");
-                setFile(null);
-
-            } catch (blockchainError) {
-                console.error("Blockchain error:", blockchainError);
-                const errMsg = blockchainError.shortMessage || blockchainError.reason || blockchainError.message || "Blockchain transaction failed";
-                setStatusMessage({
-                    type: "error",
-                    text: `Certificate uploaded off-chain, but on-chain request failed: ${errMsg}`
-                });
+            if (selectedOrganisationId) {
+                data.append("requestOrganisationId", selectedOrganisationId);
             }
+
+            setStatusMessage({ type: "info", text: "Uploading certificate…" });
+            const response = await uploadCertificate(data);
+
+            const certId = response.certificate?._id;
+            if (certId && selectedOrganisationId) {
+                setStatusMessage({ type: "info", text: "Creating verification request…" });
+                try {
+                    await createVerificationRequest({ certificateId: certId, organisationId: selectedOrganisationId });
+                    setStatusMessage({ type: "success", text: "✓ Certificate uploaded and verification request sent." });
+                } catch (reqErr) {
+                    setStatusMessage({
+                        type: "warning",
+                        text: `Certificate uploaded, but verification request failed: ${reqErr.response?.data?.message || reqErr.message}`
+                    });
+                }
+            } else {
+                setStatusMessage({ type: "success", text: "✓ Certificate uploaded successfully." });
+            }
+
+            setFormData({ certificateName: "", issuer: "", certificateType: "", issueDate: "", expiryDate: "", description: "", hasExpiry: "" });
+            setSelectedOrganisationId("");
+            setSelectedIssuerWallet("");
+            setFile(null);
+
         } catch (error) {
             console.error("Upload error:", error);
             setStatusMessage({
@@ -151,6 +138,7 @@ const UploadCertificate = () => {
         } finally {
             setLoading(false);
         }
+
     };
 
     return (
@@ -481,7 +469,7 @@ const UploadCertificate = () => {
 
                             <select
                                 value={
-                                    selectedIssuerWallet
+                                    selectedOrganisationId
                                 }
                                 onChange={
                                     handleIssuerChange
@@ -501,7 +489,7 @@ const UploadCertificate = () => {
 
                                     <option
                                         key={org._id}
-                                        value={org.walletAddress}
+                                        value={org._id}
                                     >
                                         {org.organisationName}
                                     </option>
@@ -514,15 +502,22 @@ const UploadCertificate = () => {
                             {formData.issuer && (
 
                                 <div
-                                    className={`mt-3 flex items-center gap-2 rounded-xl px-4 py-3 text-xs ${darkMode
+                                    className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 text-xs ${darkMode
                                         ? "bg-emerald-500/5 text-emerald-400"
                                         : "bg-emerald-50 text-emerald-600"
                                         }`}
                                 >
 
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                        <span>Issuer selected: {formData.issuer}</span>
+                                    </div>
 
-                                    Issuer selected: {formData.issuer}
+                                    {selectedIssuerWallet && (
+                                        <span className="font-mono text-[11px] opacity-75">
+                                            {selectedIssuerWallet.slice(0, 6)}...{selectedIssuerWallet.slice(-4)}
+                                        </span>
+                                    )}
 
                                 </div>
 

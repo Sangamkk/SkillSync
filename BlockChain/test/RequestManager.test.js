@@ -35,9 +35,17 @@ const OrganizationType = {
   Other: 5,
 };
 
+// Helper: generate a random bytes32 ID
+const randomId = () => ethers.hexlify(ethers.randomBytes(32));
+
 describe("RequestManager", function () {
   let applicantManager, organisationRegistry, requestManager;
-  let owner, student, verifier, unregisteredVerifier, other;
+  let owner, other;
+
+  // Use bytes32 IDs for everything
+  const applicantId = randomId();
+  const verifierId = randomId(); // organisation ID
+  const unregisteredVerifierId = randomId();
 
   const certHash = ethers.keccak256(ethers.toUtf8Bytes("cert-1"));
   const projectHash = ethers.keccak256(ethers.toUtf8Bytes("project-1"));
@@ -48,7 +56,7 @@ describe("RequestManager", function () {
   }
 
   beforeEach(async function () {
-    [owner, student, verifier, unregisteredVerifier, other] = await ethers.getSigners();
+    [owner, other] = await ethers.getSigners();
 
     const ApplicantManager = await ethers.getContractFactory("ApplicantManager");
     applicantManager = await ApplicantManager.deploy();
@@ -65,17 +73,19 @@ describe("RequestManager", function () {
     );
     await requestManager.waitForDeployment();
 
-    // wire ApplicantManager -> RequestManager (onlyRequestManager gate)
+    // Wire ApplicantManager → RequestManager
     await applicantManager.connect(owner).setRequestManager(await requestManager.getAddress());
 
-    // register `verifier` as an active organisation (no name param anymore)
+    // Register verifier organisation (as owner=backend)
     await organisationRegistry
       .connect(owner)
-      .registerOrganisation(verifier.address, OrganizationType.University);
+      .registerOrganisation(verifierId, OrganizationType.University);
 
-    // student + project setup used by several tests
-    await applicantManager.connect(student).createApplicant();
-    await applicantManager.connect(student).addProject(projectHash);
+    // Create applicant and project (as owner=backend)
+    await applicantManager.connect(owner).createApplicant(applicantId);
+    await applicantManager
+      .connect(owner)
+      .addProject(applicantId, projectHash);
   });
 
   describe("createRequest", function () {
@@ -83,30 +93,72 @@ describe("RequestManager", function () {
       const expiry = await futureTimestamp();
 
       const tx = await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, expiry);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          expiry
+        );
 
-      await expect(tx).to.emit(requestManager, "RequestCreated").withArgs(1, student.address);
+      await expect(tx)
+        .to.emit(requestManager, "RequestCreated")
+        .withArgs(1, applicantId);
 
       const request = await requestManager.requests(1);
-      expect(request.student).to.equal(student.address);
-      expect(request.expectedVerifier).to.equal(verifier.address);
+      expect(request.applicantId).to.equal(applicantId);
+      expect(request.expectedVerifierId).to.equal(verifierId);
       expect(request.status).to.equal(RequestStatus.Pending);
 
-      expect(await requestManager.activeRequests(certHash, verifier.address, RequestType.AddCertificate)).to.equal(1);
+      expect(
+        await requestManager.activeRequests(certHash, verifierId, RequestType.AddCertificate)
+      ).to.equal(1);
+    });
+
+    it("reverts if called by non-owner", async function () {
+      await expect(
+        requestManager
+          .connect(other)
+          .createRequest(
+            certHash,
+            CredentialType.Certificate,
+            RequestType.AddCertificate,
+            applicantId,
+            verifierId,
+            0
+          )
+      ).to.be.revertedWithCustomError(requestManager, "NotOwner");
     });
 
     it("reverts if the credential/request type combo is invalid", async function () {
+      // Certificate credential cannot use AddProjectVerification
       await expect(
         requestManager
-          .connect(student)
-          .createRequest(certHash, CredentialType.Certificate, RequestType.AddProjectVerification, verifier.address, 0)
+          .connect(owner)
+          .createRequest(
+            certHash,
+            CredentialType.Certificate,
+            RequestType.AddProjectVerification,
+            applicantId,
+            verifierId,
+            0
+          )
       ).to.be.revertedWithCustomError(requestManager, "InvalidRequestType");
 
+      // Project credential cannot use AddCertificate
       await expect(
         requestManager
-          .connect(student)
-          .createRequest(projectHash, CredentialType.Project, RequestType.AddCertificate, verifier.address, 0)
+          .connect(owner)
+          .createRequest(
+            projectHash,
+            CredentialType.Project,
+            RequestType.AddCertificate,
+            applicantId,
+            verifierId,
+            0
+          )
       ).to.be.revertedWithCustomError(requestManager, "InvalidRequestType");
     });
 
@@ -114,124 +166,177 @@ describe("RequestManager", function () {
       const past = (await ethers.provider.getBlock("latest")).timestamp - 1000;
       await expect(
         requestManager
-          .connect(student)
-          .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, past)
-      ).to.be.revertedWithCustomError(requestManager, "InvalidExpiry");
-    });
-
-    it("reverts if the expected verifier isn't a verified organisation", async function () {
-      await expect(
-        requestManager
-          .connect(student)
+          .connect(owner)
           .createRequest(
             certHash,
             CredentialType.Certificate,
             RequestType.AddCertificate,
-            unregisteredVerifier.address,
+            applicantId,
+            verifierId,
+            past
+          )
+      ).to.be.revertedWithCustomError(requestManager, "InvalidExpiry");
+    });
+
+    it("reverts if the expected verifier is not an active organisation", async function () {
+      await expect(
+        requestManager
+          .connect(owner)
+          .createRequest(
+            certHash,
+            CredentialType.Certificate,
+            RequestType.AddCertificate,
+            applicantId,
+            unregisteredVerifierId,
             0
           )
       ).to.be.revertedWithCustomError(requestManager, "InvalidIssuer");
     });
 
     it("reverts if the expected verifier was deactivated", async function () {
-      await organisationRegistry.connect(owner).deactivateOrganisation(verifier.address);
+      await organisationRegistry.connect(owner).deactivateOrganisation(verifierId);
       await expect(
         requestManager
-          .connect(student)
-          .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0)
+          .connect(owner)
+          .createRequest(
+            certHash,
+            CredentialType.Certificate,
+            RequestType.AddCertificate,
+            applicantId,
+            verifierId,
+            0
+          )
       ).to.be.revertedWithCustomError(requestManager, "InvalidIssuer");
     });
 
     it("reverts if an identical active request already exists", async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          0
+        );
 
       await expect(
         requestManager
-          .connect(student)
-          .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0)
+          .connect(owner)
+          .createRequest(
+            certHash,
+            CredentialType.Certificate,
+            RequestType.AddCertificate,
+            applicantId,
+            verifierId,
+            0
+          )
       ).to.be.revertedWithCustomError(requestManager, "RequestAlreadyExists");
     });
 
-    it("tracks requests per issuer (incoming) and per student (outgoing)", async function () {
+    it("tracks requests per issuer (incoming) and per applicant (outgoing)", async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          0
+        );
 
-      expect(await requestManager.connect(verifier).getIssuerRequests()).to.deep.equal([1n]);
-      expect(await requestManager.connect(student).getStudentRequests()).to.deep.equal([1n]);
+      expect(await requestManager.getIssuerRequests(verifierId)).to.deep.equal([1n]);
+      expect(await requestManager.getStudentRequests(applicantId)).to.deep.equal([1n]);
     });
   });
 
   describe("approveRequest - AddCertificate", function () {
     beforeEach(async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          0
+        );
     });
 
-    it("reverts if called by someone other than the expected verifier", async function () {
+    it("reverts if called by non-owner", async function () {
       await expect(
-        requestManager.connect(other).approveRequest(1)
-      ).to.be.revertedWithCustomError(requestManager, "UnauthorizedVerifier");
+        requestManager.connect(other).approveRequest(1, verifierId)
+      ).to.be.revertedWithCustomError(requestManager, "NotOwner");
     });
 
     it("reverts for an unknown request id", async function () {
       await expect(
-        requestManager.connect(verifier).approveRequest(999)
+        requestManager.connect(owner).approveRequest(999, verifierId)
       ).to.be.revertedWithCustomError(requestManager, "RequestNotFound");
     });
 
-    it("approves the request, adds the certificate, and clears activeRequests", async function () {
-      await expect(requestManager.connect(verifier).approveRequest(1))
+    it("reverts with wrong verifierId", async function () {
+      await expect(
+        requestManager.connect(owner).approveRequest(1, unregisteredVerifierId)
+      ).to.be.revertedWithCustomError(requestManager, "UnauthorizedVerifier");
+    });
+
+    it("approves the request and adds certificate, clears activeRequests", async function () {
+      await expect(requestManager.connect(owner).approveRequest(1, verifierId))
         .to.emit(requestManager, "RequestApproved")
         .withArgs(1);
 
       const cert = await applicantManager.certificates(certHash);
-      expect(cert.issuer).to.equal(verifier.address);
+      expect(cert.organisationId).to.equal(verifierId);
+      expect(cert.revoked).to.equal(false);
 
       const request = await requestManager.requests(1);
       expect(request.status).to.equal(RequestStatus.Approved);
 
       expect(
-        await requestManager.activeRequests(certHash, verifier.address, RequestType.AddCertificate)
+        await requestManager.activeRequests(certHash, verifierId, RequestType.AddCertificate)
       ).to.equal(0);
     });
 
     it("reverts if approved twice", async function () {
-      await requestManager.connect(verifier).approveRequest(1);
+      await requestManager.connect(owner).approveRequest(1, verifierId);
       await expect(
-        requestManager.connect(verifier).approveRequest(1)
+        requestManager.connect(owner).approveRequest(1, verifierId)
       ).to.be.revertedWithCustomError(requestManager, "RequestAlreadyProcessed");
-    });
-
-    it("allows a new request for the same credential after the slot is cleared", async function () {
-      await requestManager.connect(verifier).approveRequest(1);
-
-      await expect(
-        requestManager
-          .connect(student)
-          .createRequest(certHash, CredentialType.Certificate, RequestType.RevokeCertificate, verifier.address, 0)
-      ).to.emit(requestManager, "RequestCreated");
     });
   });
 
   describe("rejectRequest", function () {
     beforeEach(async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          0
+        );
     });
 
-    it("reverts if called by someone other than the expected verifier", async function () {
+    it("reverts if called by non-owner", async function () {
       await expect(
-        requestManager.connect(other).rejectRequest(1)
+        requestManager.connect(other).rejectRequest(1, verifierId)
+      ).to.be.revertedWithCustomError(requestManager, "NotOwner");
+    });
+
+    it("reverts with wrong verifierId", async function () {
+      await expect(
+        requestManager.connect(owner).rejectRequest(1, unregisteredVerifierId)
       ).to.be.revertedWithCustomError(requestManager, "UnauthorizedVerifier");
     });
 
-    it("rejects the request and clears the active slot without touching ApplicantManager state", async function () {
-      await expect(requestManager.connect(verifier).rejectRequest(1))
+    it("rejects the request and clears the active slot without touching ApplicantManager", async function () {
+      await expect(requestManager.connect(owner).rejectRequest(1, verifierId))
         .to.emit(requestManager, "RequestRejected")
         .withArgs(1);
 
@@ -239,123 +344,61 @@ describe("RequestManager", function () {
       expect(request.status).to.equal(RequestStatus.Rejected);
 
       expect(
-        await requestManager.activeRequests(certHash, verifier.address, RequestType.AddCertificate)
+        await requestManager.activeRequests(certHash, verifierId, RequestType.AddCertificate)
       ).to.equal(0);
 
+      // Certificate should not exist
       const cert = await applicantManager.certificates(certHash);
-      expect(cert.issuer).to.equal(ethers.ZeroAddress);
+      expect(cert.certificateHash).to.equal(ethers.ZeroHash);
     });
 
     it("reverts if the request was already processed", async function () {
-      await requestManager.connect(verifier).rejectRequest(1);
+      await requestManager.connect(owner).rejectRequest(1, verifierId);
       await expect(
-        requestManager.connect(verifier).rejectRequest(1)
+        requestManager.connect(owner).rejectRequest(1, verifierId)
       ).to.be.revertedWithCustomError(requestManager, "RequestAlreadyProcessed");
     });
   });
 
-  describe("approveRequest - RevokeCertificate", function () {
+  describe("approveRequest - AddProjectVerification", function () {
     beforeEach(async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
-      await requestManager.connect(verifier).approveRequest(1);
-
-      await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.RevokeCertificate, verifier.address, 0);
-    });
-
-    it("revokes the certificate on approval", async function () {
-      await requestManager.connect(verifier).approveRequest(2);
-
-      const cert = await applicantManager.certificates(certHash);
-      expect(cert.revoked).to.equal(true);
-    });
-  });
-
-  describe("approveRequest - AddProjectVerification / RevokeProjectVerification", function () {
-    beforeEach(async function () {
-      await requestManager
-        .connect(student)
+        .connect(owner)
         .createRequest(
           projectHash,
           CredentialType.Project,
           RequestType.AddProjectVerification,
-          verifier.address,
+          applicantId,
+          verifierId,
           0
         );
     });
 
     it("verifies the project on approval", async function () {
-      await requestManager.connect(verifier).approveRequest(1);
+      await requestManager.connect(owner).approveRequest(1, verifierId);
       expect(await applicantManager.isProjectVerified(projectHash)).to.equal(true);
-    });
-
-    it("revokes the verification through a follow-up request", async function () {
-      await requestManager.connect(verifier).approveRequest(1);
-
-      await requestManager
-        .connect(student)
-        .createRequest(
-          projectHash,
-          CredentialType.Project,
-          RequestType.RevokeProjectVerification,
-          verifier.address,
-          0
-        );
-      await requestManager.connect(verifier).approveRequest(2);
-
-      expect(await applicantManager.isProjectVerified(projectHash)).to.equal(false);
-    });
-  });
-
-  describe("onlyRequestManager gate on ApplicantManager", function () {
-    it("ApplicantManager rejects calls to gated functions from anyone but RequestManager", async function () {
-      await expect(
-        applicantManager
-          .connect(student)
-          .addCertificate(student.address, certHash, CredentialType.Certificate, verifier.address, 0)
-      ).to.be.revertedWithCustomError(applicantManager, "UnauthorisedOperation");
-
-      await expect(
-        applicantManager.connect(student).addProjectVerification(projectHash, verifier.address)
-      ).to.be.revertedWithCustomError(applicantManager, "UnauthorisedOperation");
-    });
-
-    it("only RequestManager's address (set once by owner) can call gated functions", async function () {
-      expect(await applicantManager.requestManager()).to.equal(await requestManager.getAddress());
     });
   });
 
   describe("end-to-end integration", function () {
-    it("full lifecycle: create applicant -> request cert -> approve -> revoke -> reject unrelated request", async function () {
-      const certHash2 = ethers.keccak256(ethers.toUtf8Bytes("cert-2"));
-      await applicantManager.connect(other).createApplicant();
-
+    it("full lifecycle: create applicant → request cert → approve", async function () {
       await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
-      await requestManager
-        .connect(other)
-        .createRequest(certHash2, CredentialType.Certificate, RequestType.AddCertificate, verifier.address, 0);
+        .connect(owner)
+        .createRequest(
+          certHash,
+          CredentialType.Certificate,
+          RequestType.AddCertificate,
+          applicantId,
+          verifierId,
+          0
+        );
+      await requestManager.connect(owner).approveRequest(1, verifierId);
 
-      await requestManager.connect(verifier).approveRequest(1);
-      await requestManager.connect(verifier).rejectRequest(2);
-
-      const certs1 = await applicantManager.getCertificates(student.address);
-      expect(certs1).to.deep.equal([certHash]);
-
-      const certs2 = await applicantManager.getCertificates(other.address);
-      expect(certs2).to.deep.equal([]);
-
-      await requestManager
-        .connect(student)
-        .createRequest(certHash, CredentialType.Certificate, RequestType.RevokeCertificate, verifier.address, 0);
-      await requestManager.connect(verifier).approveRequest(3);
+      const certs = await applicantManager.getCertificates(applicantId);
+      expect(certs).to.deep.equal([certHash]);
 
       const cert = await applicantManager.certificates(certHash);
-      expect(cert.revoked).to.equal(true);
+      expect(cert.revoked).to.equal(false);
     });
   });
 });

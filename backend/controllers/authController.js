@@ -2,30 +2,27 @@ import * as authService from "../services/authService.js";
 
 export const register = async (req, res) => {
   try {
-    const response = await authService.register(req.body);
+    const result = await authService.register(req.body);
 
-    res.status(201).json({
-      message: "Registration Successful",
-      ...response,
-    });
+    return res.status(201).json(result);
   } catch (error) {
-    console.log("this is from Auth Register Controller");
-    res.status(400).json({
+    console.error("[AUTH REGISTER ERROR]:", error.message);
+    return res.status(error.statusCode || 400).json({
+      success: false,
       message: error.message,
-      
     });
   }
 };
 
 export const login = async (req, res) => {
   try {
-    const data = await authService.login(req.body);
-    console.log(data,"-->from AuthLogin Controller.")
+    const result = await authService.login(req.body);
 
-    res.status(200).json(data);
+    return res.status(200).json(result);
   } catch (error) {
-    console.log("this is from Auth Login Controller");
-    res.status(400).json({
+    console.error("[AUTH LOGIN ERROR]:", error.message);
+    return res.status(error.statusCode || 400).json({
+      success: false,
       message: error.message,
     });
   }

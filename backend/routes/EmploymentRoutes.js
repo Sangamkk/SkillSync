@@ -4,6 +4,7 @@ import {
   getMyJobs,
   deleteJob,
   getAllJobs,
+  getJobById,
   applyToJob,
   getApplicants,
   getApplicantDetail,
@@ -14,19 +15,16 @@ import {
   getOrganisationEmployees,
   terminateEmployment,
   getStudentApplications,
-  getJobById,
   getMyEmployment,
-    getStudentEmploymentMetadata,
+  getStudentEmploymentMetadata,
 } from "../controllers/EmploymentController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
-// =====================================================
-// Organisation Routes
-// =====================================================
 
-// Create a job
+// ─── Organisation: Jobs ───────────────────────────────────────────────────────
+
 router.post(
     "/jobs",
     authenticate,
@@ -34,8 +32,6 @@ router.post(
     createJob
 );
 
-
-// Get jobs created by the logged-in organisation
 router.get(
     "/jobs/my",
     authenticate,
@@ -43,10 +39,6 @@ router.get(
     getMyJobs
 );
 
-
-// Delete a job
-// IMPORTANT: controller/service should verify that
-// this job belongs to req.user.userId
 router.delete(
     "/jobs/:jobId",
     authenticate,
@@ -54,12 +46,8 @@ router.delete(
     deleteJob
 );
 
+// ─── Student: Jobs ────────────────────────────────────────────────────────────
 
-// =====================================================
-// Student Routes
-// =====================================================
-
-// View all available jobs
 router.get(
     "/jobs",
     authenticate,
@@ -67,6 +55,7 @@ router.get(
     getAllJobs
 );
 
+// NOTE: /jobs/my must be before /jobs/:jobId to avoid conflict
 router.get(
     "/jobs/:jobId",
     authenticate,
@@ -74,7 +63,6 @@ router.get(
     getJobById
 );
 
-// Apply to a job
 router.post(
     "/jobs/:jobId/apply",
     authenticate,
@@ -82,13 +70,14 @@ router.post(
     applyToJob
 );
 
-// View my applications
 router.get(
     "/applications/my",
     authenticate,
     authorizeRoles("STUDENT"),
     getStudentApplications
 );
+
+// ─── Student: Employment & Offers ─────────────────────────────────────────────
 
 router.get(
     "/my",
@@ -98,18 +87,28 @@ router.get(
 );
 
 router.get(
-    "/students/:studentId",
+    "/offers",
     authenticate,
-    authorizeRoles("ORGANISATION"),
-    getStudentEmploymentMetadata
+    authorizeRoles("STUDENT"),
+    getMyOffers
 );
 
-// =====================================================
-// Organisation Routes
-// =====================================================
+router.post(
+    "/offers/:offerId/accept",
+    authenticate,
+    authorizeRoles("STUDENT"),
+    acceptOffer
+);
 
-// View applications for an organisation's job
-// IMPORTANT: verify the job belongs to req.user.userId
+router.post(
+    "/offers/:offerId/reject",
+    authenticate,
+    authorizeRoles("STUDENT"),
+    rejectOffer
+);
+
+// ─── Organisation: Applications & Offers ─────────────────────────────────────
+
 router.get(
     "/jobs/:jobId/applications",
     authenticate,
@@ -124,9 +123,6 @@ router.get(
     getApplicantDetail
 );
 
-// Create employment offer
-// IMPORTANT: verify the application belongs to
-// the logged-in organisation
 router.post(
     "/applications/:applicationId/offer",
     authenticate,
@@ -134,8 +130,8 @@ router.post(
     createEmploymentOffer
 );
 
+// ─── Organisation: Employees ──────────────────────────────────────────────────
 
-// View organisation employees
 router.get(
     "/employees",
     authenticate,
@@ -143,10 +139,6 @@ router.get(
     getOrganisationEmployees
 );
 
-
-// Terminate employment
-// IMPORTANT: verify the employment belongs to
-// the logged-in organisation
 router.post(
     "/employees/:offerId/terminate",
     authenticate,
@@ -154,38 +146,13 @@ router.post(
     terminateEmployment
 );
 
+// ─── Organisation: View student employment (for candidate review) ─────────────
 
-// =====================================================
-// Student Routes
-// =====================================================
-
-// View offers received by the logged-in student
 router.get(
-    "/offers",
+    "/students/:studentId",
     authenticate,
-    authorizeRoles("STUDENT"),
-    getMyOffers
+    authorizeRoles("ORGANISATION"),
+    getStudentEmploymentMetadata
 );
-
-
-// Accept employment offer
-// IMPORTANT: verify offer belongs to req.user.userId
-router.post(
-    "/offers/:offerId/accept",
-    authenticate,
-    authorizeRoles("STUDENT"),
-    acceptOffer
-);
-
-
-// Reject employment offer
-// IMPORTANT: verify offer belongs to req.user.userId
-router.post(
-    "/offers/:offerId/reject",
-    authenticate,
-    authorizeRoles("STUDENT"),
-    rejectOffer
-);
-
 
 export default router;

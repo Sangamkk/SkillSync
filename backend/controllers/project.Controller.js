@@ -6,6 +6,7 @@ import {
 } from "../services/createProjectService.js";
 import Application from "../models/Application.js";
 
+// ─── POST /api/student/projects ───────────────────────────────────────────────
 export const createProject = async (req, res) => {
     try {
         const project = await createProjectService({
@@ -14,8 +15,6 @@ export const createProject = async (req, res) => {
             projectType: req.body.projectType,
             githubLink: req.body.githubLink,
             description: req.body.description,
-            issuer: req.body.issuer,
-            issuerWallet: req.body.issuerWallet
         });
 
         return res.status(201).json({
@@ -32,12 +31,11 @@ export const createProject = async (req, res) => {
     }
 };
 
+// ─── GET /api/student/projects/pending ────────────────────────────────────────
 export const getPendingProjects = async (req, res) => {
     try {
-        const wallet = req.user.walletAddress;
-        console.log("Fetching pending projects for wallet:", wallet);
-
-        const projects = await getPendingProjectsService(wallet);
+        const orgId = req.user?.userId || req.user?._id;
+        const projects = await getPendingProjectsService(orgId);
 
         return res.status(200).json({
             success: true,
@@ -52,6 +50,7 @@ export const getPendingProjects = async (req, res) => {
     }
 };
 
+// ─── GET /api/student/projects ────────────────────────────────────────────────
 export const getStudentProjects = async (req, res) => {
     try {
         const studentId = req.params.studentId || req.query.studentId || req.user?.userId;
@@ -71,23 +70,24 @@ export const getStudentProjects = async (req, res) => {
     }
 };
 
+// ─── PUT /api/student/projects/status ────────────────────────────────────────
 export const updateProjectStatus = async (req, res) => {
     try {
-        const { id, status, txHash, rejectionReason, onChainRegistered, issuer, issuerWallet } = req.body;
+        const { id, status, txHash, rejectionReason, onChainRegistered } = req.body;
+
         if (!id) {
             return res.status(400).json({
                 success: false,
-                message: "id or githubHash is required"
+                message: "id is required"
             });
         }
 
         const project = await updateProjectStatusService(id, status, txHash, rejectionReason, {
             onChainRegistered,
-            issuer,
-            issuerWallet,
             userRole: req.user?.role,
-            userId: req.user?.userId
+            userId: req.user?.userId,
         });
+
         if (!project) {
             return res.status(404).json({
                 success: false,
@@ -109,12 +109,16 @@ export const updateProjectStatus = async (req, res) => {
     }
 };
 
+// ─── GET /api/student/candidates/:studentId/projects ─────────────────────────
 export const getCandidateProjects = async (req, res) => {
     try {
         const { studentId } = req.params;
+        const orgId = req.user?.userId || req.user?._id;
+
+        // Verify the student applied to this org's job
         const application = await Application.findOne({
             student: studentId,
-            organisation: req.user.userId,
+            organisation: orgId,
         }).select("_id").lean();
 
         if (!application) {

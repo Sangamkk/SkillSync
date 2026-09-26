@@ -8,13 +8,26 @@ const formatHash = (value) => {
   return hash.length > 18 ? `${hash.slice(0, 12)}...${hash.slice(-10)}` : hash;
 };
 
+const formatVerificationDate = (val) => {
+  if (!val) return "—";
+  const num = Number(val);
+  const date = !isNaN(num) && num < 10000000000 ? new Date(num * 1000) : new Date(val);
+  return isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+};
+
+const getOrgName = (org) => {
+  if (!org) return "Organisation";
+  if (typeof org === "string") return org;
+  return org.organisationName || org.name || "Organisation";
+};
+
 const ProfessionalProfile = ({
-  walletAddress,
   studentId,
   studentName,
   studentEmail,
+  walletAddress = "",
   darkMode = false,
-  subtitle = "On-chain portfolio",
+  subtitle = "Verified portfolio",
   compact = false,
   viewerRole = "STUDENT",
 }) => {
@@ -30,15 +43,7 @@ const ProfessionalProfile = ({
       try {
         setLoading(true);
 
-        if (!walletAddress) {
-          setProjects([]);
-          setCertificates([]);
-          setEmploymentHistory({ currentEmployment: [], previousEmployment: [] });
-          return;
-        }
-
-        const profile = await loadProfessionalProfile({ walletAddress, studentId, viewerRole });
-        console.log("kkkk",profile)
+        const profile = await loadProfessionalProfile({ studentId, viewerRole });
 
         if (!active) return;
 
@@ -65,7 +70,7 @@ const ProfessionalProfile = ({
     return () => {
       active = false;
     };
-  }, [walletAddress, studentId, viewerRole]);
+  }, [studentId, viewerRole]);
 
   const profileContainer = compact
     ? "rounded-3xl border p-5"
@@ -90,8 +95,8 @@ const ProfessionalProfile = ({
             <p className={`mt-1 text-sm ${darkMode ? "text-slate-400" : "text-slate-500"}`}>{studentEmail || "No email available"}</p>
           </div>
           <div className={`rounded-2xl border px-4 py-3 text-sm ${darkMode ? "border-white/10 bg-black/10 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Wallet</p>
-            <p className="mt-1 font-mono text-xs break-all">{walletAddress || "—"}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Student ID</p>
+            <p className="mt-1 font-mono text-xs break-all">{studentId || walletAddress || "—"}</p>
           </div>
         </div>
       </div>
@@ -196,7 +201,7 @@ const ProfessionalProfile = ({
                       <p><span className="font-semibold text-slate-500">Type:</span> {certificate.certificateType || "—"}</p>
                       <p><span className="font-semibold text-slate-500">Hash:</span> <span className="font-mono text-[10px]">{certificate.certificateHash ? `${certificate.certificateHash.slice(0, 12)}...` : "—"}</span></p>
                       <p><span className="font-semibold text-slate-500">Issued:</span> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString() : "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Verified:</span> {certificate.verificationDate ? new Date(Number(certificate.verificationDate) * 1000).toLocaleDateString() : "—"}</p>
+                      <p><span className="font-semibold text-slate-500">Verified:</span> {formatVerificationDate(certificate.verificationDate)}</p>
                     </div>
                     {(certificate.requestHistory || []).length > 0 && (
                       <div className="mt-3 border-t border-slate-200/60 pt-3 text-xs text-slate-400">
@@ -223,12 +228,12 @@ const ProfessionalProfile = ({
                 {employmentHistory.currentEmployment.map((record) => (
                   <div key={record.hash || record.employmentHash} className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-slate-500">
                     <div className="flex items-center justify-between gap-3">
-                        <p className="font-semibold text-slate-800">{record.role || "Role"}</p>
+                        <p className="font-semibold text-slate-800">{record.role || record.job?.title || "Role"}</p>
                       <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase text-emerald-400">{record.status || "ACTIVE"}</span>
                     </div>
                     <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
-                      <p><span className="font-semibold text-slate-500">Organisation:</span> {record.organisation || "Organisation"}</p>
-                      <p><span className="font-semibold text-slate-500">Employment Type:</span> {record.employmentType || "Employment"}</p>
+                      <p><span className="font-semibold text-slate-500">Organisation:</span> {getOrgName(record.organisation)}</p>
+                      <p><span className="font-semibold text-slate-500">Employment Type:</span> {record.employmentType || record.job?.employmentType || "Employment"}</p>
                       <p><span className="font-semibold text-slate-500">Started:</span> {record.joinedAt ? new Date(record.joinedAt * 1000).toLocaleDateString() : "—"}</p>
                       <p><span className="font-semibold text-slate-500">Offer ID:</span> {record.offerId ?? "—"}</p>
                     </div>
@@ -246,10 +251,10 @@ const ProfessionalProfile = ({
               <div className="space-y-3">
                 {employmentHistory.previousEmployment.map((record) => (
                   <div key={record.hash || record.employmentHash} className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4 text-sm text-slate-500">
-                    <p className="font-semibold text-slate-800">{record.role || "Role"}</p>
+                    <p className="font-semibold text-slate-800">{record.role || record.job?.title || "Role"}</p>
                     <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2">
-                      <p><span className="font-semibold text-slate-500">Organisation:</span> {record.organisation || "Organisation"}</p>
-                      <p><span className="font-semibold text-slate-500">Employment Type:</span> {record.employmentType || "Employment"}</p>
+                      <p><span className="font-semibold text-slate-500">Organisation:</span> {getOrgName(record.organisation)}</p>
+                      <p><span className="font-semibold text-slate-500">Employment Type:</span> {record.employmentType || record.job?.employmentType || "Employment"}</p>
                       <p><span className="font-semibold text-slate-500">Started:</span> {record.joinedAt ? new Date(record.joinedAt * 1000).toLocaleDateString() : "—"}</p>
                       <p><span className="font-semibold text-slate-500">Ended:</span> {record.endedAt ? new Date(record.endedAt * 1000).toLocaleDateString() : "—"}</p>
                       <p className="sm:col-span-2"><span className="font-semibold text-slate-500">Final status:</span> {record.status || "TERMINATED"}</p>

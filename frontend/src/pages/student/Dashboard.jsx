@@ -1,398 +1,240 @@
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import { getProfile } from "../../services/studentService";
-import { getStudentCertificates } from "../../services/certificateService";
-import { getStudentProjectsFromBlockchain, getStudentEmploymentOnChain } from "../../services/blockchainServices/blockchainService";
-import { getMyApplications, getMyOffers } from "../../services/employmentService";
-import { getStudentProjects } from "../../services/projectService";
-import { getStudentRequests } from "../../services/requestService";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { getCertificates } from "../../services/certificateService";
+import { getMyApplications, getMyOffers, getMyEmployment } from "../../services/employmentService";
+import { getStudentProjects } from "../../services/projectService";
 import MeshBackground from "../../components/common/MeshBackground";
 import ProfessionalProfile from "../../components/common/ProfessionalProfile";
-import ApplicantManagerAbi from "../../abhi/ApplicantManager.json";
 
-const normalizeToArray = (value) => {
-    if (value == null) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value === "object") {
-        if (Array.isArray(value.certificates)) return value.certificates;
-        if (Array.isArray(value.projects)) return value.projects;
-        if (Array.isArray(value.projectHashes)) return value.projectHashes;
-        if (Array.isArray(value.data)) return value.data;
-        if (Array.isArray(value.items)) return value.items;
-        if (Array.isArray(value.results)) return value.results;
-        if (typeof value[Symbol.iterator] === "function") return Array.from(value);
-        return [];
-    }
-    return [];
-};
-
-const normalizeHash = (value) => {
-    if (!value) return "";
-    const text = String(value).toLowerCase();
-    return text.startsWith("0x") ? text : `0x${text}`;
-};
-
-const formatHash = (value) => {
-    if (!value) return "—";
-    const hash = normalizeHash(value);
-    return hash.length > 18 ? `${hash.slice(0, 12)}...${hash.slice(-10)}` : hash;
-};
+const StatCard = ({ label, value, sub, color, link, darkMode }) => (
+  <Link
+    to={link || "#"}
+    className={`group block rounded-2xl border p-5 transition-all hover:scale-[1.02] ${
+      darkMode
+        ? "border-white/10 bg-white/[0.04] hover:border-white/20"
+        : "border-slate-200 bg-white shadow-sm hover:shadow-md"
+    }`}
+  >
+    <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${color}`}>{label}</p>
+    <p className={`text-4xl font-bold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{value}</p>
+    {sub !== undefined && (
+      <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{sub}</p>
+    )}
+  </Link>
+);
 
 const Dashboard = () => {
-    const [user, setUser] = useState(null);
-    const [studentId, setStudentId] = useState(null);
-    const [projects, setProjects] = useState([]);
-    const [certificates, setCertificates] = useState([]);
-    const [employmentHistory, setEmploymentHistory] = useState({ currentEmployment: [], previousEmployment: [] });
-    const [stats, setStats] = useState({ certificates: 0, verifiedCertificates: 0, projects: 0, approvedProjects: 0, offers: 0, applications: 0 });
-    const [darkMode] = useState(() => localStorage.getItem("skillsync-theme") !== "light");
-    const navigate = useNavigate();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchProfileAndStats();
-    }, []);
+  const [studentId, setStudentId] = useState(null);
+  const [stats, setStats] = useState({
+    certificates: 0,
+    verifiedCertificates: 0,
+    pendingCertificates: 0,
+    projects: 0,
+    approvedProjects: 0,
+    offers: 0,
+    applications: 0,
+    activeEmployment: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [darkMode] = useState(() => localStorage.getItem("skillsync-theme") !== "light");
 
-    const fetchProfileAndStats = async () => {
-        try {
-            const userStr = localStorage.getItem("user");
-            if (!userStr) return;
+  useEffect(() => {
+    if (!currentUser) return;
+    setStudentId(currentUser._id || currentUser.id);
+    fetchStats();
+  }, [currentUser]);
 
-            const userData = JSON.parse(userStr);
-            const walletAddress = userData.walletAddress;
-            const profile = await getProfile(walletAddress);
-            setUser(profile);
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    try {
+      const [certsRes, appsRes, offersRes, projectsRes, empRes] = await Promise.allSettled([
+        getCertificates(),
+        getMyApplications(),
+        getMyOffers(),
+        getStudentProjects(),
+        getMyEmployment(),
+      ]);
 
-            const resolvedStudentId = profile?._id || userData.id || userData._id;
-            setStudentId(resolvedStudentId);
-            const blockchainProjectStats = await getStudentProjectsFromBlockchain(walletAddress);
-            const projectMetadata = await getStudentProjects(studentId).catch(() => []);
-            const requests = await getStudentRequests().catch(() => []);
+      const certs = Array.isArray(certsRes.value?.certificates)
+        ? certsRes.value.certificates
+        : Array.isArray(certsRes.value) ? certsRes.value : [];
 
-            const [certs, apps, offers] = await Promise.all([
-                getStudentCertificates(resolvedStudentId).catch(() => []),
-                getMyApplications().catch(() => []),
-                getMyOffers().catch(() => [])
-            ]);
+      const apps = Array.isArray(appsRes.value?.applications)
+        ? appsRes.value.applications
+        : Array.isArray(appsRes.value) ? appsRes.value : [];
 
-            const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com");
-            const contract = new ethers.Contract(import.meta.env.VITE_APPLICANT_MANAGER_ADDRESS, ApplicantManagerAbi.abi, provider);
+      const offers = Array.isArray(offersRes.value?.offers)
+        ? offersRes.value.offers
+        : Array.isArray(offersRes.value) ? offersRes.value : [];
 
-            const metadataMap = new Map(
-                (Array.isArray(projectMetadata) ? projectMetadata : []).map((project) => [normalizeHash(project.githubHash || project.projectHash || project._id), project])
-            );
+      const projects = Array.isArray(projectsRes.value?.projects)
+        ? projectsRes.value.projects
+        : Array.isArray(projectsRes.value) ? projectsRes.value : [];
 
-            const projectHashes = normalizeToArray(blockchainProjectStats?.projectHashes ?? blockchainProjectStats?.projects ?? []);
-            const projectRecords = await Promise.all(
-                projectHashes.map(async (projectHash) => {
-                    const normalizedHash = normalizeHash(projectHash);
-                    const metadata = metadataMap.get(normalizedHash) || metadataMap.get(normalizeHash(String(projectHash).replace(/^0x/, ""))) || {};
+      const emp = empRes.value || {};
+      const current = Array.isArray(emp.currentEmployment) ? emp.currentEmployment : [];
 
-                    let verifications = [];
-                    try {
-                        verifications = await contract.getProjectVerifications(normalizedHash);
-                    } catch (error) {
-                        console.warn("Verification fetch failed for project hash:", normalizedHash, error);
-                    }
+      setStats({
+        certificates: certs.length,
+        verifiedCertificates: certs.filter(
+          (c) => c.verificationStatus === "Verified" || c.verificationStatus === "VERIFIED"
+        ).length,
+        pendingCertificates: certs.filter(
+          (c) => c.verificationStatus === "Pending" || c.verificationStatus === "PENDING"
+        ).length,
+        projects: projects.length,
+        approvedProjects: projects.filter(
+          (p) => p.status === "APPROVED"
+        ).length,
+        offers: offers.filter(
+          (o) => o.status === "Offered" || o.status === "OFFERED"
+        ).length,
+        applications: apps.length,
+        activeEmployment: current.length,
+      });
+    } catch (err) {
+      console.error("Dashboard stats fetch error:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
-                    const history = [
-                        ...(Array.isArray(verifications) ? verifications : []).map((item) => ({
-                            label: item.revoked ? "REVOKED" : "VERIFIED",
-                            verifier: item.verifier,
-                            wallet: item.verifier,
-                            verifiedAt: Number(item.verifiedAt),
-                            revoked: Boolean(item.revoked)
-                        })),
-                        ...requests
-                            .filter((request) => normalizeHash(request.credentialHash) === normalizedHash)
-                            .map((request) => ({
-                                label: "PENDING",
-                                expectedVerifier: request.expectedVerifier,
-                                requestId: request.id,
-                                createdAt: Number(request.createdAt),
-                                wallet: request.expectedVerifier
-                            }))
-                    ];
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
-                    return {
-                        hash: normalizedHash,
-                        name: metadata.projectName || "Project",
-                        projectType: metadata.projectType || "Project",
-                        githubLink: metadata.githubLink || "",
-                        description: metadata.description || "",
-                        isVerified: await contract.isProjectVerified(normalizedHash).catch(() => false),
-                        onChainRegistered: true,
-                        verificationHistory: history
-                    };
-                })
-            );
+  if (!currentUser) {
+    navigate("/login");
+    return null;
+  }
 
-            const certList = normalizeToArray(certs);
-            const appList = normalizeToArray(apps);
-            const offerList = normalizeToArray(offers);
-            const employmentOnChain = walletAddress ? await getStudentEmploymentOnChain(walletAddress) : { currentEmployment: [], previousEmployment: [] };
+  const base = darkMode
+    ? "min-h-screen bg-gray-950 text-white"
+    : "min-h-screen bg-slate-50 text-gray-900";
 
-            setProjects(projectRecords);
-            setCertificates(certList);
-            setEmploymentHistory(employmentOnChain);
+  return (
+    <div className={`relative ${base}`}>
+      <MeshBackground darkMode={darkMode} />
 
-            setStats({
-                certificates: certList.length,
-                verifiedCertificates: certList.filter((c) => c.verificationStatus === "Verified").length,
-                projects: Number(blockchainProjectStats?.projects ?? projectRecords.length ?? 0),
-                approvedProjects: Number(blockchainProjectStats?.verifiedProjects ?? 0),
-                applications: appList.length,
-                offers: offerList.filter((o) => o.status === "Offered" || o.status === "Pending").length
-            });
-        } catch (error) {
-            console.error("Dashboard profile/stats fetch error:", error);
-        }
-    };
-
-    const nxtPage = () => navigate("/certificate");
-
-    return (
-        <div className={`relative min-h-screen overflow-hidden px-6 py-10 transition-colors duration-500 ${darkMode ? "bg-[#070B14] text-white" : "bg-[#F6F8FC] text-slate-900"}`}>
-            <MeshBackground darkMode={darkMode} />
-            <div className={`pointer-events-none fixed -left-40 -top-40 h-96 w-96 rounded-full blur-[130px] ${darkMode ? "bg-blue-600/15" : "bg-blue-500/10"}`} />
-            <div className={`pointer-events-none fixed -bottom-40 -right-40 h-96 w-96 rounded-full blur-[130px] ${darkMode ? "bg-violet-600/15" : "bg-violet-500/10"}`} />
-
-            <div className="relative z-10 mx-auto max-w-6xl">
-                <div className={`mb-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
-                    <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500">Student Dashboard</p>
-                            <h1 className={`mt-2 text-3xl font-bold tracking-tight ${darkMode ? "text-white" : "text-slate-900"}`}>
-                                Welcome back{user?.name ? `, ${user.name}` : ""}
-                            </h1>
-                            <p className={`mt-2 text-sm ${darkMode ? "text-slate-400" : "text-slate-500"}`}>
-                                Manage your digital identity and professional credentials.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 sm:items-center">
-                            <Link to="/student/jobs" className="rounded-xl bg-blue-600/90 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-600">💼 Browse Jobs</Link>
-                            <Link to="/student/offers" className="rounded-xl bg-violet-600/90 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-violet-600">✉ Offers {stats.offers > 0 && `(${stats.offers})`}</Link>
-                            <Link to="/student/project/add" className="rounded-xl bg-slate-800 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-700">🚀 Add Project</Link>
-                            <Link to="/student/projects" className="rounded-xl bg-slate-700 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-600">📁 My Projects</Link>
-                            <Link to="/student/project/verify" className="rounded-xl bg-indigo-600/90 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-indigo-600">📜 Request Verification</Link>
-                            <Link to="/student/project-history" className="rounded-xl bg-emerald-600/90 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-emerald-600">🕘 Project History</Link>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className={`rounded-2xl border p-5 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white shadow-sm"}`}>
-                        <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Certificates</p><span className="text-lg">📜</span></div>
-                        <div className="mt-3 flex items-baseline justify-between"><p className="text-2xl font-bold">{stats.certificates}</p><span className="text-xs font-semibold text-emerald-400">{stats.verifiedCertificates} Verified</span></div>
-                    </div>
-                    <div className={`rounded-2xl border p-5 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white shadow-sm"}`}>
-                        <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Projects</p><span className="text-lg">📂</span></div>
-                        <div className="mt-3 flex items-baseline justify-between"><p className="text-2xl font-bold">{stats.projects}</p><span className="text-xs font-semibold text-emerald-400">{stats.approvedProjects} Verified</span></div>
-                    </div>
-                    <div className={`rounded-2xl border p-5 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white shadow-sm"}`}>
-                        <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Applications</p><span className="text-lg">💼</span></div>
-                        <div className="mt-3 flex items-baseline justify-between"><p className="text-2xl font-bold">{stats.applications}</p><span className="text-xs text-slate-400">Submitted</span></div>
-                    </div>
-                    <div className={`rounded-2xl border p-5 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white shadow-sm"}`}>
-                        <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Job Offers</p><span className="text-lg">✉</span></div>
-                        <div className="mt-3 flex items-baseline justify-between"><p className="text-2xl font-bold">{stats.offers}</p><span className="text-xs font-semibold text-violet-400">Pending Action</span></div>
-                    </div>
-                </div>
-
-                <div className="grid gap-6 lg:grid-cols-[1fr_0.7fr]">
-                    <div className={`rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">Profile</p>
-                                <h2 className={`mt-2 text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>Student Information</h2>
-                            </div>
-                            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${darkMode ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>◈</div>
-                        </div>
-
-                        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                            <div className={`rounded-2xl p-5 ${darkMode ? "bg-white/[0.035]" : "bg-slate-50"}`}>
-                                <p className="text-xs uppercase tracking-wider text-slate-500">Full Name</p>
-                                <p className={`mt-2 font-semibold ${darkMode ? "text-slate-100" : "text-slate-800"}`}>{user?.name || "—"}</p>
-                            </div>
-                            <div className={`rounded-2xl p-5 ${darkMode ? "bg-white/[0.035]" : "bg-slate-50"}`}>
-                                <p className="text-xs uppercase tracking-wider text-slate-500">Email</p>
-                                <p className={`mt-2 break-all font-semibold ${darkMode ? "text-slate-100" : "text-slate-800"}`}>{user?.email || "—"}</p>
-                            </div>
-                            <div className={`rounded-2xl p-5 ${darkMode ? "bg-white/[0.035]" : "bg-slate-50"}`}>
-                                <p className="text-xs uppercase tracking-wider text-slate-500">USN</p>
-                                <p className={`mt-2 font-semibold ${darkMode ? "text-slate-100" : "text-slate-800"}`}>{user?.usn || "—"}</p>
-                            </div>
-                            <div className={`rounded-2xl p-5 ${darkMode ? "bg-white/[0.035]" : "bg-slate-50"}`}>
-                                <p className="text-xs uppercase tracking-wider text-slate-500">College</p>
-                                <p className={`mt-2 font-semibold ${darkMode ? "text-slate-100" : "text-slate-800"}`}>{user?.college || "—"}</p>
-                            </div>
-                        </div>
-
-                        <div className={`mt-4 rounded-2xl border p-5 ${darkMode ? "border-blue-500/10 bg-blue-500/[0.04]" : "border-blue-100 bg-blue-50/50"}`}>
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-lg">🦊</div>
-                                <div className="min-w-0">
-                                    <p className="text-xs uppercase tracking-wider text-slate-500">Connected Wallet</p>
-                                    <p className={`mt-1 break-all font-mono text-xs ${darkMode ? "text-slate-300" : "text-slate-600"}`}>{user?.walletAddress || "—"}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`relative overflow-hidden rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-[#111827]/90" : "border-slate-200 bg-white/85 shadow-sm"}`}>
-                        <div className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-[80px] ${darkMode ? "bg-blue-600/15" : "bg-blue-500/10"}`} />
-                        <div className="relative">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500">Digital Identity</p>
-                            <div className="mt-8 flex items-center justify-center">
-                                <div className="flex h-28 w-28 items-center justify-center rounded-full border border-blue-500/20 bg-gradient-to-br from-blue-600/10 to-violet-600/10">
-                                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-violet-600 text-3xl font-bold text-white shadow-xl shadow-blue-500/20">
-                                        {user?.name ? user.name.charAt(0).toUpperCase() : "S"}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-7 text-center">
-                                <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>{user?.name || "Student"}</h3>
-                                <p className="mt-1 text-sm text-slate-500">{user?.role || "STUDENT"}</p>
-                            </div>
-                            <div className={`mt-7 rounded-2xl border p-4 text-center ${darkMode ? "border-emerald-500/20 bg-emerald-500/[0.05]" : "border-emerald-200 bg-emerald-50"}`}>
-                                <div className="flex items-center justify-center gap-2">
-                                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                    <span className="text-sm font-semibold text-emerald-500">Identity Active</span>
-                                </div>
-                                <p className="mt-2 text-xs text-slate-500">Connected to SkillSync blockchain</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div
-                    className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode
-                        ? "border-white/10 bg-white/[0.04]"
-                        : "border-slate-200 bg-white/85 shadow-sm"
-                        }`}
-                >
-                    <div className="mb-6">
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-500">
-                            Verified Credentials
-                        </p>
-
-                        <h2
-                            className={`mt-2 text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"
-                                }`}
-                        >
-                            My Certificates
-                        </h2>
-
-                        <p className="mt-2 text-sm text-slate-500">
-                            View your academic and professional certificates and their
-                            verification status.
-                        </p>
-                    </div>
-
-                    {certificates.length === 0 ? (
-                        <p className="text-sm text-slate-400">
-                            No certificates available for this account.
-                        </p>
-                    ) : (
-                        <div className="space-y-3">
-                            {certificates.map((certificate) => (
-                                <div
-                                    key={
-                                        certificate._id ||
-                                        certificate.certificateHash
-                                    }
-                                    className={`rounded-2xl border p-4 ${darkMode
-                                        ? "border-white/10 bg-[#0b1020]"
-                                        : "border-slate-200 bg-white"
-                                        }`}
-                                >
-                                    {/* Certificate Header */}
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p
-                                            className={`text-sm font-semibold ${darkMode
-                                                ? "text-white"
-                                                : "text-slate-900"
-                                                }`}
-                                        >
-                                            {certificate.certificateName ||
-                                                "Certificate"}
-                                        </p>
-
-                                        <span
-                                            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${certificate.verificationStatus ===
-                                                "Verified"
-                                                ? "bg-emerald-500/10 text-emerald-400"
-                                                : certificate.verificationStatus ===
-                                                    "Rejected"
-                                                    ? "bg-rose-500/10 text-rose-400"
-                                                    : "bg-amber-500/10 text-amber-400"
-                                                }`}
-                                        >
-                                            {certificate.verificationStatus ||
-                                                "Pending"}
-                                        </span>
-                                    </div>
-
-                                    {/* Certificate Details */}
-                                    <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
-                                        <p>
-                                            <span className="font-semibold text-slate-500">
-                                                Issuer:
-                                            </span>{" "}
-                                            {certificate.issuer || "—"}
-                                        </p>
-
-                                        <p>
-                                            <span className="font-semibold text-slate-500">
-                                                Type:
-                                            </span>{" "}
-                                            {certificate.certificateType || "—"}
-                                        </p>
-
-                                        <p>
-                                            <span className="font-semibold text-slate-500">
-                                                Hash:
-                                            </span>{" "}
-                                            <span className="font-mono text-[10px]">
-                                                {certificate.certificateHash
-                                                    ? `${certificate.certificateHash.slice(
-                                                        0,
-                                                        12
-                                                    )}...`
-                                                    : "—"}
-                                            </span>
-                                        </p>
-
-                                        <p>
-                                            <span className="font-semibold text-slate-500">
-                                                Date:
-                                            </span>{" "}
-                                            {certificate.issueDate
-                                                ? new Date(
-                                                    certificate.issueDate
-                                                ).toLocaleDateString()
-                                                : "—"}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div className={`mt-6 rounded-3xl border p-7 backdrop-blur-xl ${darkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-white/85 shadow-sm"}`}>
-                    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">Credentials</p>
-                            <h2 className={`mt-2 text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>Manage Certificates</h2>
-                            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">Upload and manage your academic and professional certificates.</p>
-                        </div>
-                        <button onClick={nxtPage} className="rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">Add Certificates →</button>
-                    </div>
-                </div>
-            </div>
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-violet-500 mb-1">
+              Student Dashboard
+            </p>
+            <h1 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+              Welcome back, {currentUser.name?.split(" ")[0] || "Student"} 👋
+            </h1>
+            <p className={`text-sm mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+              {currentUser.college && `${currentUser.college} · `}{currentUser.email}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/student/profile"
+              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+                darkMode
+                  ? "border-white/10 text-gray-400 hover:border-white/30 hover:text-white"
+                  : "border-slate-200 text-gray-600 hover:bg-slate-100"
+              }`}
+            >
+              Profile
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
-    );
+
+        {/* Quick nav */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {[
+            { label: "Certificates", to: "/student/certificates" },
+            { label: "Projects", to: "/student/projects" },
+            { label: "Browse Jobs", to: "/student/jobs" },
+            { label: "My Offers", to: "/student/offers" },
+            { label: "Request Verification", to: "/student/project/verify" },
+          ].map(({ label, to }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                darkMode
+                  ? "bg-white/5 text-gray-300 hover:bg-violet-500/20 hover:text-violet-300 border border-white/10"
+                  : "bg-white text-gray-700 hover:bg-violet-50 hover:text-violet-700 border border-slate-200 shadow-sm"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Stats grid */}
+        {loadingStats ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className={`rounded-2xl border h-28 animate-pulse ${darkMode ? "border-white/5 bg-white/5" : "border-slate-100 bg-slate-100"}`} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <StatCard
+              label="Certificates"
+              value={stats.certificates}
+              sub={`${stats.verifiedCertificates} verified · ${stats.pendingCertificates} pending`}
+              color="text-violet-500"
+              link="/student/certificates"
+              darkMode={darkMode}
+            />
+            <StatCard
+              label="Projects"
+              value={stats.projects}
+              sub={`${stats.approvedProjects} approved`}
+              color="text-blue-500"
+              link="/student/projects"
+              darkMode={darkMode}
+            />
+            <StatCard
+              label="Applications"
+              value={stats.applications}
+              sub="job applications"
+              color="text-emerald-500"
+              link="/student/jobs"
+              darkMode={darkMode}
+            />
+            <StatCard
+              label="Offers"
+              value={stats.offers}
+              sub={stats.activeEmployment > 0 ? `${stats.activeEmployment} active` : "pending review"}
+              color="text-amber-500"
+              link="/student/offers"
+              darkMode={darkMode}
+            />
+          </div>
+        )}
+
+        {/* Professional Profile */}
+        {studentId && (
+          <ProfessionalProfile
+            studentId={studentId}
+            studentName={currentUser.name}
+            studentEmail={currentUser.email}
+            darkMode={darkMode}
+            viewerRole="STUDENT"
+          />
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;

@@ -1,20 +1,19 @@
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
+
 dotenv.config();
-console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("API Key:", process.env.CLOUDINARY_API_KEY);
-console.log("API Secret Exists:", !!process.env.CLOUDINARY_API_SECRET);
 
 cloudinary.config({
-
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-
     api_key: process.env.CLOUDINARY_API_KEY,
-
-    api_secret: process.env.CLOUDINARY_API_SECRET
-
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-console.log(cloudinary.config());
+// Verify configuration loaded (don't log secrets)
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    console.warn("[CLOUDINARY] Warning: Cloudinary credentials may not be configured");
+} else {
+    console.log("[CLOUDINARY] Configured for cloud:", process.env.CLOUDINARY_CLOUD_NAME);
+}
 
 export default cloudinary;

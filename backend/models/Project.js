@@ -26,39 +26,42 @@ const projectSchema = new mongoose.Schema(
             trim: true
         },
 
+        // SHA-256 of github link, used as on-chain projectHash
         githubHash: {
             type: String,
             required: true,
             unique: true
         },
 
-        issuer: {
-            type: String,
-            default: ""
-        },
-
-        issuerWallet: {
-            type: String,
-            default: ""
-        },
-        onChainRegistered: {
-            type: Boolean,
-            default: false
-        },
-
         description: {
             type: String,
-            trim: true
+            trim: true,
+            default: ""
         },
+
         status: {
             type: String,
             enum: ["PENDING", "APPROVED", "REJECTED"],
             default: "PENDING"
         },
+
+        // Organisation that approved the project
+        approvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "OrganisationApplication",
+            default: null
+        },
+
+        onChainRegistered: {
+            type: Boolean,
+            default: false
+        },
+
         txHash: {
             type: String,
             default: ""
         },
+
         rejectionReason: {
             type: String,
             default: ""

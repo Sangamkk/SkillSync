@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 
 import {
-    acceptOffer as acceptOfferOnChain,
-    rejectOffer as rejectOfferOnChain,
-} from "../../services/blockchainServices/blockchainService";
-
-import {
     getMyOffers,
-    acceptOffer as acceptOfferBackend,
-    rejectOffer as rejectOfferBackend,
+    acceptOffer,
+    rejectOffer,
 } from "../../services/employmentService";
 
 import MeshBackground from "../../components/common/MeshBackground";
+
 
 function StudentOffers() {
 
@@ -48,19 +44,20 @@ function StudentOffers() {
     const [statusMessage, setStatusMessage] = useState({ id: null, text: "", type: "" });
 
     async function handleAccept(offer) {
-        setProcessingId(offer.offerId);
-        setStatusMessage({ id: offer.offerId, text: "Prompting MetaMask transaction to accept offer on-chain...", type: "info" });
+        const offerId = offer._id || offer.offerId;
+        setProcessingId(offerId);
+        setStatusMessage({ id: offerId, text: "Processing…", type: "info" });
 
         try {
-            // Step 1: Blockchain accept offer
-            setStatusMessage({ id: offer.offerId, text: "Waiting for blockchain confirmation...", type: "info" });
-            await acceptOfferOnChain(offer.offerId);
+            // Backend handles blockchain transaction internally
+            const result = await acceptOffer(offerId);
+            const txHash = result?.transactionHash || result?.txHash || "";
 
-            // Step 2: MongoDB / Backend
-            setStatusMessage({ id: offer.offerId, text: "Synchronizing database employment record...", type: "info" });
-            await acceptOfferBackend(offer.offerId);
-
-            setStatusMessage({ id: offer.offerId, text: "✓ Offer Accepted successfully on-chain!", type: "success" });
+            setStatusMessage({
+                id: offerId,
+                text: txHash ? `✓ Offer accepted! Tx: ${txHash.slice(0, 14)}…` : "✓ Offer accepted successfully.",
+                type: "success"
+            });
 
             setTimeout(() => {
                 fetchOffers();
@@ -68,27 +65,22 @@ function StudentOffers() {
             }, 1500);
         } catch (err) {
             console.error("Accept offer error:", err);
-            const errMsg = err.shortMessage || err.reason || err.message || "Failed to accept offer";
-            setStatusMessage({ id: offer.offerId, text: `❌ ${errMsg}`, type: "error" });
+            const errMsg = err.response?.data?.message || err.message || "Failed to accept offer";
+            setStatusMessage({ id: offerId, text: `❌ ${errMsg}`, type: "error" });
         } finally {
             setProcessingId(null);
         }
     }
 
-    async function handleReject(offerId) {
+    async function handleReject(offer) {
+        const offerId = typeof offer === "object" ? (offer._id || offer.offerId) : offer;
         setProcessingId(offerId);
-        setStatusMessage({ id: offerId, text: "Prompting MetaMask transaction to reject offer on-chain...", type: "info" });
+        setStatusMessage({ id: offerId, text: "Processing…", type: "info" });
 
         try {
-            // Step 1: Blockchain reject offer
-            setStatusMessage({ id: offerId, text: "Waiting for blockchain confirmation...", type: "info" });
-            await rejectOfferOnChain(offerId);
-
-            // Step 2: MongoDB / Backend
-            setStatusMessage({ id: offerId, text: "Updating database status...", type: "info" });
-            await rejectOfferBackend(offerId);
-
-            setStatusMessage({ id: offerId, text: "Offer Rejected.", type: "success" });
+            // Backend handles blockchain transaction internally
+            await rejectOffer(offerId);
+            setStatusMessage({ id: offerId, text: "✓ Offer rejected.", type: "success" });
 
             setTimeout(() => {
                 fetchOffers();
@@ -96,7 +88,7 @@ function StudentOffers() {
             }, 1500);
         } catch (err) {
             console.error("Reject offer error:", err);
-            const errMsg = err.shortMessage || err.reason || err.message || "Failed to reject offer";
+            const errMsg = err.response?.data?.message || err.message || "Failed to reject offer";
             setStatusMessage({ id: offerId, text: `❌ ${errMsg}`, type: "error" });
         } finally {
             setProcessingId(null);
@@ -330,7 +322,7 @@ function StudentOffers() {
                                 </div>
 
                                 {/* STATUS MESSAGE */}
-                                {statusMessage.id === offer.offerId && statusMessage.text && (
+                                {statusMessage.id === (offer._id || offer.offerId) && statusMessage.text && (
                                     <div
                                         className={`mt-4 rounded-xl p-3 text-xs font-medium ${
                                             statusMessage.type === "success"
@@ -352,30 +344,28 @@ function StudentOffers() {
                                     <div className="mt-6 flex flex-col gap-3 sm:flex-row">
 
                                         <button
-                                            disabled={processingId === offer.offerId}
+                                            disabled={processingId === (offer._id || offer.offerId)}
                                             onClick={() =>
                                                 handleAccept(offer)
                                             }
                                             className={`flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
-                                                processingId === offer.offerId ? "cursor-not-allowed opacity-60" : ""
+                                                processingId === (offer._id || offer.offerId) ? "cursor-not-allowed opacity-60" : ""
                                             }`}
                                         >
-                                            {processingId === offer.offerId ? "Accepting..." : "✓ Accept Offer"}
+                                            {processingId === (offer._id || offer.offerId) ? "Accepting..." : "✓ Accept Offer"}
                                         </button>
 
 
                                         <button
-                                            disabled={processingId === offer.offerId}
+                                            disabled={processingId === (offer._id || offer.offerId)}
                                             onClick={() =>
-                                                handleReject(
-                                                    offer.offerId
-                                                )
+                                                handleReject(offer)
                                             }
                                             className={`flex-1 rounded-xl border py-3 font-semibold transition-all duration-300 ${
                                                 darkMode
                                                     ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                                                     : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                            } ${processingId === offer.offerId ? "cursor-not-allowed opacity-60" : ""}`}
+                                            } ${processingId === (offer._id || offer.offerId) ? "cursor-not-allowed opacity-60" : ""}`}
                                         >
                                             Reject Offer
                                         </button>

@@ -16,7 +16,7 @@ const ApplicationSchema = new mongoose.Schema(
 
     organisation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "OrganisationApplication",
       required: true,
     },
 

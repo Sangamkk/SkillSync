@@ -5,10 +5,6 @@ import {
     terminateEmployment,
 } from "../../services/employmentService";
 
-import {
-    terminateEmployment as terminateEmploymentOnChain,
-} from "../../services/blockchainServices/blockchainService";
-
 import MeshBackground from "../../components/common/MeshBackground";
 
 
@@ -39,23 +35,26 @@ function Employees() {
         }
     }
 
-    async function handleTerminate(offerId) {
-        const confirmTerminate = window.confirm("Are you sure you want to terminate this employment on-chain?");
+    async function handleTerminate(record) {
+        const confirmTerminate = window.confirm("Are you sure you want to terminate this employment?");
         if (!confirmTerminate) return;
 
-        setTerminatingId(offerId);
-        setStatusMessage({ id: offerId, text: "Prompting MetaMask transaction to terminate employment...", type: "info" });
+        const id = typeof record === "object" ? (record._id || record.offerId) : record;
+        setTerminatingId(id);
+        setStatusMessage({ id, text: "Processing termination…", type: "info" });
 
         try {
-            // Step 1: Blockchain termination
-            setStatusMessage({ id: offerId, text: "Waiting for on-chain confirmation...", type: "info" });
-            const txHash = await terminateEmploymentOnChain(offerId);
+            // Backend handles blockchain termination internally
+            const result = await terminateEmployment(id);
+            const txHash = result?.transactionHash || result?.txHash || "";
 
-            // Step 2: MongoDB / Backend
-            setStatusMessage({ id: offerId, text: "Updating database status...", type: "info" });
-            await terminateEmployment(offerId);
-
-            setStatusMessage({ id: offerId, text: `✓ Employment Terminated. Tx: ${txHash ? txHash.slice(0, 14) : ""}...`, type: "success" });
+            setStatusMessage({
+                id,
+                text: txHash
+                    ? `✓ Employment Terminated. Tx: ${txHash.slice(0, 14)}…`
+                    : "✓ Employment terminated successfully.",
+                type: "success"
+            });
 
             setTimeout(() => {
                 fetchEmployees();
@@ -63,8 +62,8 @@ function Employees() {
             }, 1500);
         } catch (err) {
             console.error("Termination error:", err);
-            const errMsg = err.shortMessage || err.reason || err.message || "Termination failed";
-            setStatusMessage({ id: offerId, text: `❌ ${errMsg}`, type: "error" });
+            const errMsg = err.response?.data?.message || err.message || "Termination failed";
+            setStatusMessage({ id, text: `❌ ${errMsg}`, type: "error" });
         } finally {
             setTerminatingId(null);
         }
@@ -337,7 +336,7 @@ function Employees() {
                                 </div>
 
                                 {/* STATUS MESSAGE */}
-                                {statusMessage.id === emp.offerId && statusMessage.text && (
+                                {statusMessage.id === (emp._id || emp.offerId) && statusMessage.text && (
                                     <div
                                         className={`mt-4 rounded-xl p-3 text-xs font-medium ${
                                             statusMessage.type === "success"
@@ -356,17 +355,17 @@ function Employees() {
 
                                 {emp.status !== "Terminated" && (
                                     <button
-                                        disabled={terminatingId === emp.offerId}
+                                        disabled={terminatingId === (emp._id || emp.offerId)}
                                         className={`mt-5 w-full rounded-xl border py-3 font-semibold transition-all duration-300 ${
                                             darkMode
                                                 ? "border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10"
                                                 : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                                        } ${terminatingId === emp.offerId ? "cursor-not-allowed opacity-60" : ""}`}
+                                        } ${terminatingId === (emp._id || emp.offerId) ? "cursor-not-allowed opacity-60" : ""}`}
                                         onClick={() =>
-                                            handleTerminate(emp.offerId)
+                                            handleTerminate(emp)
                                         }
                                     >
-                                        {terminatingId === emp.offerId ? "Terminating On-Chain..." : "Terminate Employment"}
+                                        {terminatingId === (emp._id || emp.offerId) ? "Terminating On-Chain..." : "Terminate Employment"}
                                     </button>
                                 )}
 

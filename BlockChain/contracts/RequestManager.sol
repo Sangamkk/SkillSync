@@ -6,8 +6,6 @@ import "./ApplicantManager.sol";
 import "./OrganisationRegistry.sol";
 
 contract RequestManager {
-
-    //errors
     error RequestAlreadyExists(uint256 requestId);
     error RequestNotFound();
     error RequestAlreadyProcessed();
@@ -15,59 +13,63 @@ contract RequestManager {
     error InvalidExpiry();
     error InvalidRequestType();
     error InvalidIssuer();
+    error InvalidApplicantId();
+    error InvalidOrganisationId();
+    error NotOwner();
 
-    //events
-    event RequestCreated(uint256 indexed id, address indexed student);
+    event RequestCreated(uint256 indexed id, bytes32 indexed applicantId);
     event RequestApproved(uint256 indexed id);
     event RequestRejected(uint256 indexed id);
 
-    //constructor
-    constructor(address applicantManagerAddress,address orgRegistryaddress) {
+    address public immutable owner;
+
+    constructor(address applicantManagerAddress, address orgRegistryaddress) {
         applicantManager = ApplicantManager(applicantManagerAddress);
         organisationRegistry = OrganisationRegistry(orgRegistryaddress);
+        owner = msg.sender;
     }
 
-    //struct
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
+        _;
+    }
+
     struct Request {
         uint256 id;
         bytes32 credentialHash;
         Types.CredentialType credentialType;
         Types.RequestType requestType;
-        address student;
-        address expectedVerifier;
+        bytes32 applicantId;
+        bytes32 expectedVerifierId;
         Types.RequestStatus status;
         uint64 createdAt;
         uint64 expiresAt;
     }
 
-    //statevars
     mapping(uint256 => Request) public requests;
-
-    mapping(address => uint256[]) private outgoingRequests;
-    mapping(address => uint256[]) private incomingRequests;
-
-    // credentialHash -> expectedVerifier -> requestType -> requestId
-    mapping(bytes32 => mapping(address => mapping(Types.RequestType => uint256)))
+    mapping(bytes32 => uint256[]) private outgoingRequests;
+    mapping(bytes32 => uint256[]) private incomingRequests;
+    mapping(bytes32 => mapping(bytes32 => mapping(Types.RequestType => uint256)))
         public activeRequests;
-
     uint256 public nextRequestId;
 
-    //contracts
     ApplicantManager public immutable applicantManager;
     OrganisationRegistry public immutable organisationRegistry;
 
-    //functions
     function createRequest(
         bytes32 _credentialHash,
         Types.CredentialType _credentialType,
         Types.RequestType _requestType,
-        address _expectedVerifier,
+        bytes32 _applicantId,
+        bytes32 _expectedVerifierId,
         uint64 _expiresAt
-    ) external {
+    ) external onlyOwner {
+        if (_applicantId == 0) revert InvalidApplicantId();
+        if (_expectedVerifierId == 0) revert InvalidOrganisationId();
 
-        if (activeRequests[_credentialHash][_expectedVerifier][_requestType] != 0) {
+        if (activeRequests[_credentialHash][_expectedVerifierId][_requestType] != 0) {
             revert RequestAlreadyExists(
-                activeRequests[_credentialHash][_expectedVerifier][_requestType]
+                activeRequests[_credentialHash][_expectedVerifierId][_requestType]
             );
         }
 
@@ -81,16 +83,20 @@ contract RequestManager {
             revert InvalidExpiry();
         }
 
-        if (!organisationRegistry.isActiveOrganisation(_expectedVerifier)) {
+        if (!organisationRegistry.isActiveOrganisation(_expectedVerifierId)) {
             revert InvalidIssuer();
+        }
+
+        if (!applicantManager.applicantExists(_applicantId)) {
+            revert InvalidApplicantId();
         }
 
         uint256 _id = ++nextRequestId;
 
         requests[_id] = Request({
             id: _id,
-            student: msg.sender,
-            expectedVerifier: _expectedVerifier,
+            applicantId: _applicantId,
+            expectedVerifierId: _expectedVerifierId,
             credentialHash: _credentialHash,
             credentialType: _credentialType,
             requestType: _requestType,
@@ -99,145 +105,85 @@ contract RequestManager {
             expiresAt: _expiresAt
         });
 
-        outgoingRequests[msg.sender].push(_id);
-        incomingRequests[_expectedVerifier].push(_id);
+        outgoingRequests[_applicantId].push(_id);
+        incomingRequests[_expectedVerifierId].push(_id);
+        activeRequests[_credentialHash][_expectedVerifierId][_requestType] = _id;
 
-        activeRequests[_credentialHash][_expectedVerifier][_requestType] = _id;
-
-        emit RequestCreated(_id, msg.sender);
+        emit RequestCreated(_id, _applicantId);
     }
 
-    //makes sure the requestType actually matches the credentialType being acted on
     function _validateRequestType(
         Types.CredentialType credentialType,
         Types.RequestType requestType
     ) internal pure {
-
         if (credentialType == Types.CredentialType.Project) {
-
-            if (
-                requestType != Types.RequestType.AddProjectVerification
-            ) {
+            if (requestType != Types.RequestType.AddProjectVerification) {
                 revert InvalidRequestType();
             }
-
         } else {
-
-            if (
-                requestType != Types.RequestType.AddCertificate
-            ) {
+            if (requestType != Types.RequestType.AddCertificate) {
                 revert InvalidRequestType();
             }
         }
     }
 
-    //validation (read-only, no side effects)
-    function _validateRequest(
-        uint256 requestId
-    ) internal view returns (Request storage request) {
-
+    function _validateRequest(uint256 requestId, bytes32 expectedVerifierId)
+        internal
+        view
+        returns (Request storage request)
+    {
         request = requests[requestId];
 
-        if (request.id == 0)
-            revert RequestNotFound();
-
-        if (request.status != Types.RequestStatus.Pending)
-            revert RequestAlreadyProcessed();
-
-        if (request.expectedVerifier != msg.sender)
-            revert UnauthorizedVerifier();
+        if (request.id == 0) revert RequestNotFound();
+        if (request.status != Types.RequestStatus.Pending) revert RequestAlreadyProcessed();
+        if (request.expectedVerifierId != expectedVerifierId) revert UnauthorizedVerifier();
 
         return request;
     }
 
-    //closes out a request: sets final status and clears the active-request slot
     function _closeRequest(
         Request storage request,
         Types.RequestStatus status
     ) internal {
-
         request.status = status;
-
-        delete activeRequests[
-            request.credentialHash
-        ][
-            request.expectedVerifier
-        ][
-            request.requestType
-        ];
+        delete activeRequests[request.credentialHash][request.expectedVerifierId][request.requestType];
     }
 
-    function approveRequest(uint256 requestId) external {
-
-        Request storage request = _validateRequest(requestId);
+    function approveRequest(uint256 requestId, bytes32 verifierId) external onlyOwner {
+        Request storage request = _validateRequest(requestId, verifierId);
 
         if (request.requestType == Types.RequestType.AddCertificate) {
-
-            _approveCertificate(request);
-
-        } else if (
-            request.requestType == Types.RequestType.AddProjectVerification
-        ) {
-
-            _approveProjectVerification(request);
-
+            applicantManager.addCertificate(
+                request.applicantId,
+                request.expectedVerifierId,
+                request.credentialHash,
+                request.credentialType,
+                request.expiresAt
+            );
+        } else if (request.requestType == Types.RequestType.AddProjectVerification) {
+            applicantManager.addProjectVerification(
+                request.credentialHash,
+                request.expectedVerifierId
+            );
         } else {
-
             revert InvalidRequestType();
         }
 
         _closeRequest(request, Types.RequestStatus.Approved);
-
         emit RequestApproved(requestId);
     }
 
-    function rejectRequest(uint256 requestId) external {
-
-        Request storage request = _validateRequest(requestId);
-
+    function rejectRequest(uint256 requestId, bytes32 verifierId) external onlyOwner {
+        Request storage request = _validateRequest(requestId, verifierId);
         _closeRequest(request, Types.RequestStatus.Rejected);
-
         emit RequestRejected(requestId);
     }
 
-    // ApplicantManager dispatch
-    //internal function
-    function _approveCertificate(
-        Request storage request
-    ) internal {
-
-        applicantManager.addCertificate(
-            request.student,
-            request.credentialHash,
-            request.credentialType,
-            msg.sender,
-            request.expiresAt
-        );
+    function getIssuerRequests(bytes32 organisationId) external view returns (uint256[] memory) {
+        return incomingRequests[organisationId];
     }
 
-    function _approveProjectVerification(
-        Request storage request
-    ) internal {
-
-        applicantManager.addProjectVerification(
-            request.credentialHash,
-            msg.sender
-        );
-    }
-
-    function getIssuerRequests()
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return incomingRequests[msg.sender];
-    }
-
-    function getStudentRequests()
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return outgoingRequests[msg.sender];
+    function getStudentRequests(bytes32 applicantId) external view returns (uint256[] memory) {
+        return outgoingRequests[applicantId];
     }
 }

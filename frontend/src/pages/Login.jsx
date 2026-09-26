@@ -1,429 +1,248 @@
 import { useState } from "react";
-import { useWallet } from "../context/WalletContext";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { login as loginApi } from "../services/authService";
 import MeshBackground from "../components/common/MeshBackground";
-import { applicantExists } from "../services/blockchainServices/blockchainService";
-import { applicantLogin, organisationLogin } from "../services/backendAuthentication/loginService";
 
-function Login() {
-    const { connectWallet } = useWallet();
-    const navigate = useNavigate();
+const ROLES = ["STUDENT", "ORGANISATION"];
 
-    // ================= THEME =================
+const roleConfig = {
+  STUDENT: {
+    label: "Student",
+    icon: "🎓",
+    color: "from-violet-500 to-purple-600",
+    desc: "Access your portfolio, certificates & job opportunities",
+    redirectTo: "/student/dashboard",
+  },
+  ORGANISATION: {
+    label: "Organisation",
+    icon: "🏢",
+    color: "from-blue-500 to-cyan-500",
+    desc: "Manage verifications, issue certificates & recruit talent",
+    redirectTo: "/organisation",
+  },
+  ADMIN: {
+    label: "Admin",
+    icon: "🛡️",
+    color: "from-orange-500 to-red-500",
+    desc: "System administration",
+    redirectTo: "/admin",
+  },
+};
 
-    const [darkMode, setDarkMode] = useState(() => {
-        return localStorage.getItem("skillsync-theme") !== "light";
-    });
-    const [role, setRole] = useState("STUDENT");
-    const [formData, setFormData] = useState({ email: "", password: "" });
+const Login = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    };
+  const [selectedRole, setSelectedRole] = useState("STUDENT");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [darkMode] = useState(() => localStorage.getItem("skillsync-theme") !== "light");
 
-    // ================= HANDLE LOGIN =================
+  const cfg = roleConfig[selectedRole];
+  const from = location.state?.from?.pathname || cfg.redirectTo;
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            // ==========================================
-            // 1. CONNECT METAMASK
-            // ==========================================
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await loginApi({ email, password, role: selectedRole });
+      const { token, user } = data;
+      if (!token) throw new Error("No token received from server.");
+      login(token, user);
+      navigate(roleConfig[user.role]?.redirectTo || from, { replace: true });
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Login failed. Check your credentials and try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            const walletAddress = await connectWallet();
+  const base = darkMode
+    ? "bg-gray-950 text-white"
+    : "bg-slate-50 text-gray-900";
 
-            console.log("Connected wallet:", walletAddress);
+  return (
+    <div className={`relative min-h-screen flex items-center justify-center px-4 ${base}`}>
+      <MeshBackground darkMode={darkMode} />
 
-            if (!walletAddress) {
-                return;
-            }
+      <div className="relative z-10 w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+              S
+            </div>
+            <span className={`text-2xl font-bold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`}>
+              SkillSync
+            </span>
+          </div>
+          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            Blockchain-verified credentials platform
+          </p>
+        </div>
 
-            // ==========================================
-            // 2. APPLICANT BLOCKCHAIN CHECK
-            // ==========================================
+        {/* Card */}
+        <div className={`rounded-2xl border backdrop-blur-xl p-8 shadow-2xl ${
+          darkMode
+            ? "border-white/10 bg-white/[0.04]"
+            : "border-slate-200 bg-white/90"
+        }`}>
+          <h1 className={`text-xl font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>
+            Welcome back
+          </h1>
+          <p className={`text-sm mb-6 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            Sign in to your SkillSync account
+          </p>
 
-            if (role === "STUDENT") {
-                const exists = await applicantExists(walletAddress);
-
-                if (!exists) {
-                    alert(
-                        "This wallet is not registered as an applicant."
-                    );
-                    return;
-                }
-            }
-
-            // ==========================================
-            // 3. PREPARE LOGIN DATA
-            // ==========================================
-
-            const loginData = {
-                walletAddress,
-                role,
-            };
-
-            console.log("Login data:", loginData);
-
-            // ==========================================
-            // 4. LOGIN THROUGH BACKEND
-            // ==========================================
-
-            let response;
-
-            if (role === "STUDENT") {
-                response = await applicantLogin(loginData);
-            } else if (role === "ORGANISATION") {
-                response = await organisationLogin(loginData);
-            }
-            console.log("Login response:", response);
-
-            // ==========================================
-            // 5. STORE AUTHENTICATION DATA
-            // ==========================================
-
-            localStorage.setItem("token", response.token);
-
-            localStorage.setItem(
-                "user",
-                JSON.stringify(response.user)
-            );
-
-            // ==========================================
-            // 6. VERIFY ROLE
-            // ==========================================
-
-            if (response.user.role !== role) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
-
-                alert(
-                    "The selected account type does not match your account."
-                );
-
-                return;
-            }
-
-            // ==========================================
-            // 7. SUCCESS
-            // ==========================================
-
-            alert(response.message || "Login successful");
-
-            // ==========================================
-            // 8. ROLE-BASED NAVIGATION
-            // ==========================================
-
-            if (response.user.role === "STUDENT") {
-                navigate("/student/dashboard");
-                return;
-            }
-
-            if (response.user.role === "ORGANISATION") {
-                navigate("/organisation");
-                return;
-            }
-
-        } catch (error) {
-            console.error("Login Error:", error);
-
-            alert(
-                error.response?.data?.message ||
-                error.message ||
-                "Login Failed"
-            );
-        }
-    };
-
-    // ================= UI =================
-
-    return (
-        <div
-            className={`relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 transition-colors duration-500 ${darkMode
-                    ? "bg-[#070B14] text-white"
-                    : "bg-[#F8FAFC] text-slate-900"
-                }`}
-        >
-
-            {/* ================= MESH BACKGROUND ================= */}
-
-            <MeshBackground darkMode={darkMode} />
-
-            {/* ================= THEME TOGGLE ================= */}
-
-            <button
+          {/* Role selector */}
+          <div className={`flex gap-2 mb-6 p-1 rounded-xl ${darkMode ? "bg-white/5" : "bg-slate-100"}`}>
+            {ROLES.map((r) => (
+              <button
+                key={r}
                 type="button"
-                onClick={() => {
-                    const newMode = !darkMode;
+                onClick={() => { setSelectedRole(r); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  selectedRole === r
+                    ? `bg-gradient-to-r ${roleConfig[r].color} text-white shadow-lg`
+                    : darkMode
+                      ? "text-gray-400 hover:text-white"
+                      : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <span>{roleConfig[r].icon}</span>
+                {roleConfig[r].label}
+              </button>
+            ))}
+          </div>
 
-                    setDarkMode(newMode);
+          {/* Role description */}
+          <p className={`text-xs mb-5 px-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+            {cfg.desc}
+          </p>
 
-                    localStorage.setItem(
-                        "skillsync-theme",
-                        newMode ? "dark" : "light"
-                    );
-                }}
-                className={`absolute right-6 top-6 z-50 flex h-11 w-11 items-center justify-center rounded-xl border transition-all duration-300 hover:scale-105 ${darkMode
-                        ? "border-white/10 bg-white/5 hover:bg-white/10"
-                        : "border-slate-200 bg-white shadow-sm hover:bg-slate-50"
-                    }`}
-                title={
-                    darkMode
-                        ? "Switch to Light Mode"
-                        : "Switch to Dark Mode"
-                }
-            >
-                {darkMode ? "☀️" : "🌙"}
-            </button>
+          {/* Error */}
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
 
-            {/* ================= LOGIN CONTENT ================= */}
-
-            <div className="relative z-10 w-full max-w-md">
-
-                {/* ================= BRAND ================= */}
-
-                <div className="mb-8 text-center">
-
-                    <h1
-                        className={`text-3xl font-bold tracking-tight ${darkMode
-                                ? "text-white"
-                                : "text-slate-900"
-                            }`}
-                    >
-                        Skill<span className="text-blue-500">Sync</span>
-                    </h1>
-
-                    <p
-                        className={`mt-2 text-sm ${darkMode
-                                ? "text-slate-400"
-                                : "text-slate-500"
-                            }`}
-                    >
-                        Blockchain-powered credential verification
-                    </p>
-
-                </div>
-
-                {/* ================= LOGIN CARD ================= */}
-
-                <div
-                    className={`rounded-3xl border p-8 shadow-2xl backdrop-blur-2xl transition-colors duration-500 sm:p-10 ${darkMode
-                            ? "border-white/10 bg-white/[0.06] shadow-black/30"
-                            : "border-slate-200 bg-white/90 shadow-slate-200/70"
-                        }`}
-                >
-
-                    {/* ================= HEADING ================= */}
-
-                    <div className="text-center">
-
-                        <h2
-                            className={`text-3xl font-bold tracking-tight ${darkMode
-                                    ? "text-white"
-                                    : "text-slate-900"
-                                }`}
-                        >
-                            Welcome Back
-                        </h2>
-
-                        <p
-                            className={`mt-2 text-sm ${darkMode
-                                    ? "text-slate-400"
-                                    : "text-slate-500"
-                                }`}
-                        >
-                            Login to your SkillSync account
-                        </p>
-
-                    </div>
-
-                    {/* ================= ROLE SELECTOR ================= */}
-
-                    <div className="mt-7">
-
-                        <p
-                            className={`mb-3 text-sm font-medium ${darkMode
-                                    ? "text-slate-300"
-                                    : "text-slate-700"
-                                }`}
-                        >
-                            Login as
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-3">
-
-                            {/* ================= APPLICANT ================= */}
-
-                            <button
-                                type="button"
-                                onClick={() => setRole("STUDENT")}
-                                className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 transition-all duration-300 ${role === "STUDENT"
-                                        ? darkMode
-                                            ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                                            : "border-blue-500 bg-blue-50 text-blue-600"
-                                        : darkMode
-                                            ? "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
-                                            : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
-                                    }`}
-                            >
-
-                                {/* Radio */}
-                                <span
-                                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${role === "STUDENT"
-                                            ? "border-blue-500"
-                                            : darkMode
-                                                ? "border-slate-600"
-                                                : "border-slate-300"
-                                        }`}
-                                >
-                                    {role === "STUDENT" && (
-                                        <span className="h-2 w-2 rounded-full bg-blue-500" />
-                                    )}
-                                </span>
-
-                                <span className="font-semibold">
-                                    Applicant
-                                </span>
-
-                            </button>
-
-                            {/* ================= ORGANISATION ================= */}
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setRole("ORGANISATION")
-                                }
-                                className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 transition-all duration-300 ${role === "ORGANISATION"
-                                        ? darkMode
-                                            ? "border-violet-500 bg-violet-500/10 text-violet-400"
-                                            : "border-violet-500 bg-violet-50 text-violet-600"
-                                        : darkMode
-                                            ? "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
-                                            : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
-                                    }`}
-                            >
-
-                                {/* Radio */}
-                                <span
-                                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${role === "ORGANISATION"
-                                            ? "border-violet-500"
-                                            : darkMode
-                                                ? "border-slate-600"
-                                                : "border-slate-300"
-                                        }`}
-                                >
-                                    {role === "ORGANISATION" && (
-                                        <span className="h-2 w-2 rounded-full bg-violet-500" />
-                                    )}
-                                </span>
-
-                                <span className="font-semibold">
-                                    Organisation
-                                </span>
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                    {/* ================= FORM ================= */}
-
-                    <form
-                        onSubmit={handleSubmit}
-                        className="mt-6 space-y-5"
-                    >
-
-                        {/* ================= LOGIN BUTTON ================= */}
-
-                        <button
-                            type="submit"
-                            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-600/20 transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-600/30"
-                        >
-                            <span className="relative z-10">
-                                🦊 Connect MetaMask & Login
-                            </span>
-                        </button>
-
-                        {/* ================= DIVIDER ================= */}
-
-                        <div className="flex items-center gap-3 py-1">
-
-                            <div
-                                className={`h-px flex-1 ${darkMode
-                                        ? "bg-white/10"
-                                        : "bg-slate-200"
-                                    }`}
-                            />
-
-                            <span
-                                className={`text-xs ${darkMode
-                                        ? "text-slate-600"
-                                        : "text-slate-400"
-                                    }`}
-                            >
-                                SECURE WEB3 LOGIN
-                            </span>
-
-                            <div
-                                className={`h-px flex-1 ${darkMode
-                                        ? "bg-white/10"
-                                        : "bg-slate-200"
-                                    }`}
-                            />
-
-                        </div>
-
-                        {/* ================= REGISTER ================= */}
-
-                        <p
-                            className={`text-center text-sm ${darkMode
-                                    ? "text-slate-400"
-                                    : "text-slate-500"
-                                }`}
-                        >
-                            Don't have an account?{" "}
-
-                            <Link
-                                to="/register"
-                                className="font-semibold text-blue-500 transition hover:text-blue-400 hover:underline"
-                            >
-                                Register
-                            </Link>
-                        </p>
-
-                    </form>
-
-                </div>
-
-                {/* ================= SECURITY INDICATORS ================= */}
-
-                <div
-                    className={`mt-6 flex items-center justify-center gap-6 text-xs ${darkMode
-                            ? "text-slate-600"
-                            : "text-slate-500"
-                        }`}
-                >
-
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        Wallet secured
-                    </span>
-
-                    <span className="flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                        Blockchain verified
-                    </span>
-
-                </div>
-
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                Email address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                autoComplete="email"
+                className={`w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 ${
+                  darkMode
+                    ? "bg-white/5 border-white/10 text-white placeholder-gray-600"
+                    : "bg-white border-slate-200 text-gray-900 placeholder-gray-400"
+                }`}
+              />
             </div>
 
+            <div>
+              <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  className={`w-full px-4 py-2.5 pr-11 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500/40 ${
+                    darkMode
+                      ? "bg-white/5 border-white/10 text-white placeholder-gray-600"
+                      : "bg-white border-slate-200 text-gray-900 placeholder-gray-400"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
+                    darkMode ? "text-gray-500 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-2.5 px-4 rounded-xl font-medium text-sm text-white transition-all bg-gradient-to-r ${cfg.color} hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing in…
+                </span>
+              ) : (
+                `Sign in as ${cfg.label}`
+              )}
+            </button>
+          </form>
+
+          {/* Footer links */}
+          <div className="mt-6 flex flex-col gap-2 text-center">
+            <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+              Don't have a student account?{" "}
+              <Link to="/register" className="text-violet-400 hover:text-violet-300 font-medium">
+                Register here
+              </Link>
+            </p>
+            <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+              Representing an organisation?{" "}
+              <Link to="/org/register" className="text-blue-400 hover:text-blue-300 font-medium">
+                Apply to join
+              </Link>
+            </p>
+          </div>
         </div>
-    );
-}
+
+        {/* Admin login note */}
+        <p className="text-center text-xs text-gray-600 mt-4">
+          Admin?{" "}
+          <button
+            type="button"
+            onClick={() => setSelectedRole("ADMIN")}
+            className="text-orange-400 hover:text-orange-300 underline underline-offset-2"
+          >
+            Switch to admin mode
+          </button>
+          {selectedRole === "ADMIN" && (
+            <span className="ml-2 text-orange-400">↑ Use the form above</span>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default Login;
