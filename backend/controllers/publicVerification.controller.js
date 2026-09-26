@@ -2,11 +2,13 @@ import crypto from "crypto";
 import Certificate from "../models/Certificate.js";
 import User from "../models/User.js";
 import OrganisationApplication from "../models/OrganisationApplication.js";
+import { applicantManager } from "../blockchain/contracts.js";
 
 // ─── GET /api/public/verify/:certificateId ────────────────────────────────────
 /**
  * Public certificate verification — NO authentication required.
  * Returns enough data for the frontend to display certificate validity.
+ * Cross-checks with on-chain Ethereum Sepolia smart contract (ApplicantManager).
  */
 export const verifyCertificate = async (req, res) => {
   try {
@@ -57,6 +59,108 @@ export const verifyCertificate = async (req, res) => {
     else if (certificate.verificationStatus === "Pending") resultStatus = "PENDING";
     else resultStatus = "REJECTED";
 
+    // ── Live smart contract cross-check on Sepolia ──
+    const CREDENTIAL_TYPE_NAMES = [
+      "Academic",
+      "Skill",
+      "Internship",
+      "WorkExperience",
+      "ProjectVerification",
+      "Achievement",
+    ];
+
+    let blockchainVerification = {
+      verifiedOnChain: false,
+      contractAddress: process.env.APPLICANT_MANAGER_ADDRESS || null,
+      network: "Ethereum Sepolia",
+      onChainCertificateHash: null,
+      onChainApplicantId: null,
+      onChainOrganisationId: null,
+      onChainIssuedAt: null,
+      onChainExpiresAt: null,
+      onChainRevoked: false,
+      liveChecked: false,
+      verifiedBy: null,
+      verifiedFor: null,
+    };
+
+    if (certificate.certificateHash) {
+      try {
+        const hashBytes32 = certificate.certificateHash.startsWith("0x")
+          ? certificate.certificateHash
+          : "0x" + certificate.certificateHash;
+
+        const onChainCert = await applicantManager.certificates(hashBytes32);
+        if (
+          onChainCert &&
+          onChainCert[0] &&
+          onChainCert[0] !== "0x0000000000000000000000000000000000000000000000000000000000000000"
+        ) {
+          const isRevokedOnChain = Boolean(onChainCert[6]);
+          const expiresAtSec = Number(onChainCert[5]);
+          const isExpiredOnChain = expiresAtSec !== 0 && expiresAtSec <= Math.floor(Date.now() / 1000);
+
+          // Fetch verifiedBy organisation identity from on-chain organisationId
+          let onChainVerifierOrg = null;
+          if (onChainCert[2] && onChainCert[2] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+            onChainVerifierOrg = await OrganisationApplication.findOne(
+              { organisationId: onChainCert[2] },
+              { organisationName: 1, organisationType: 1 }
+            ).lean();
+          }
+
+          // Fetch verifiedFor student recipient identity from on-chain applicantId
+          let onChainRecipientStudent = null;
+          if (onChainCert[1] && onChainCert[1] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+            onChainRecipientStudent = await User.findOne(
+              { applicantId: onChainCert[1] },
+              { name: 1, usn: 1, college: 1 }
+            ).lean();
+          }
+
+          const credentialTypeIndex = Number(onChainCert[3]);
+          const credentialTypeName = CREDENTIAL_TYPE_NAMES[credentialTypeIndex] || "Certificate";
+
+          blockchainVerification = {
+            verifiedOnChain: true,
+            contractAddress: process.env.APPLICANT_MANAGER_ADDRESS || null,
+            network: "Ethereum Sepolia",
+            onChainCertificateHash: onChainCert[0],
+            onChainApplicantId: onChainCert[1],
+            onChainOrganisationId: onChainCert[2],
+            credentialType: credentialTypeName,
+            onChainIssuedAt: Number(onChainCert[4]) ? new Date(Number(onChainCert[4]) * 1000).toISOString() : null,
+            onChainExpiresAt: expiresAtSec ? new Date(expiresAtSec * 1000).toISOString() : null,
+            onChainRevoked: isRevokedOnChain,
+            liveChecked: true,
+            verifiedBy: {
+              organisationId: onChainCert[2],
+              name: onChainVerifierOrg ? onChainVerifierOrg.organisationName : certificate.issuer,
+              type: onChainVerifierOrg ? onChainVerifierOrg.organisationType : null,
+            },
+            verifiedFor: {
+              applicantId: onChainCert[1],
+              name: onChainRecipientStudent ? onChainRecipientStudent.name : (certificate.student?.name || null),
+              usn: onChainRecipientStudent ? onChainRecipientStudent.usn : (certificate.student?.usn || null),
+              college: onChainRecipientStudent ? onChainRecipientStudent.college : (certificate.student?.college || null),
+            },
+          };
+
+          if (isRevokedOnChain) {
+            resultStatus = "REVOKED";
+          } else if (isExpiredOnChain) {
+            resultStatus = "EXPIRED";
+          } else {
+            resultStatus = "VALID";
+          }
+        } else {
+          blockchainVerification.liveChecked = true;
+        }
+      } catch (chainErr) {
+        console.warn("[LIVE ON-CHAIN VERIFICATION NOTICE]:", chainErr.message);
+      }
+    }
+
     // Get issuing organisation name (without sensitive data)
     let issuerInfo = { name: certificate.issuer };
     if (certificate.issuingOrganisation) {
@@ -76,6 +180,7 @@ export const verifyCertificate = async (req, res) => {
       success: true,
       valid: resultStatus === "VALID",
       status: resultStatus,
+      blockchain: blockchainVerification,
       certificate: {
         _id: certificate._id,
         certificateName: certificate.certificateName,
@@ -84,7 +189,9 @@ export const verifyCertificate = async (req, res) => {
         issuerInfo,
         issueDate: certificate.issueDate,
         expiryDate: certificate.expiryDate,
-        verificationStatus: certificate.verificationStatus,
+        verificationStatus: blockchainVerification.verifiedOnChain
+          ? (blockchainVerification.onChainRevoked ? "Revoked" : "Verified")
+          : certificate.verificationStatus,
         certificateHash: certificate.certificateHash,
         certificateURL: certificate.certificateURL,
         transactionHash: certificate.txHash || certificate.blockchainTxHash || null,
@@ -176,6 +283,106 @@ export const verifyDocument = async (req, res) => {
     else if (certificate.verificationStatus === "Pending") status = "PENDING";
     else status = "REJECTED";
 
+    // ── Live smart contract cross-check on Sepolia ──
+    const CREDENTIAL_TYPE_NAMES = [
+      "Academic",
+      "Skill",
+      "Internship",
+      "WorkExperience",
+      "ProjectVerification",
+      "Achievement",
+    ];
+
+    let blockchainVerification = {
+      verifiedOnChain: false,
+      contractAddress: process.env.APPLICANT_MANAGER_ADDRESS || null,
+      network: "Ethereum Sepolia",
+      onChainCertificateHash: null,
+      onChainApplicantId: null,
+      onChainOrganisationId: null,
+      onChainIssuedAt: null,
+      onChainExpiresAt: null,
+      onChainRevoked: false,
+      liveChecked: false,
+      verifiedBy: null,
+      verifiedFor: null,
+    };
+
+    if (certificate.certificateHash) {
+      try {
+        const hashBytes32 = certificate.certificateHash.startsWith("0x")
+          ? certificate.certificateHash
+          : "0x" + certificate.certificateHash;
+
+        const onChainCert = await applicantManager.certificates(hashBytes32);
+        if (
+          onChainCert &&
+          onChainCert[0] &&
+          onChainCert[0] !== "0x0000000000000000000000000000000000000000000000000000000000000000"
+        ) {
+          const isRevokedOnChain = Boolean(onChainCert[6]);
+          const expiresAtSec = Number(onChainCert[5]);
+          const isExpiredOnChain = expiresAtSec !== 0 && expiresAtSec <= Math.floor(Date.now() / 1000);
+
+          let onChainVerifierOrg = null;
+          if (onChainCert[2] && onChainCert[2] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+            onChainVerifierOrg = await OrganisationApplication.findOne(
+              { organisationId: onChainCert[2] },
+              { organisationName: 1, organisationType: 1 }
+            ).lean();
+          }
+
+          let onChainRecipientStudent = null;
+          if (onChainCert[1] && onChainCert[1] !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+            onChainRecipientStudent = await User.findOne(
+              { applicantId: onChainCert[1] },
+              { name: 1, usn: 1, college: 1 }
+            ).lean();
+          }
+
+          const credentialTypeIndex = Number(onChainCert[3]);
+          const credentialTypeName = CREDENTIAL_TYPE_NAMES[credentialTypeIndex] || "Certificate";
+
+          blockchainVerification = {
+            verifiedOnChain: true,
+            contractAddress: process.env.APPLICANT_MANAGER_ADDRESS || null,
+            network: "Ethereum Sepolia",
+            onChainCertificateHash: onChainCert[0],
+            onChainApplicantId: onChainCert[1],
+            onChainOrganisationId: onChainCert[2],
+            credentialType: credentialTypeName,
+            onChainIssuedAt: Number(onChainCert[4]) ? new Date(Number(onChainCert[4]) * 1000).toISOString() : null,
+            onChainExpiresAt: expiresAtSec ? new Date(expiresAtSec * 1000).toISOString() : null,
+            onChainRevoked: isRevokedOnChain,
+            liveChecked: true,
+            verifiedBy: {
+              organisationId: onChainCert[2],
+              name: onChainVerifierOrg ? onChainVerifierOrg.organisationName : certificate.issuer,
+              type: onChainVerifierOrg ? onChainVerifierOrg.organisationType : null,
+            },
+            verifiedFor: {
+              applicantId: onChainCert[1],
+              name: onChainRecipientStudent ? onChainRecipientStudent.name : (certificate.student?.name || null),
+              usn: onChainRecipientStudent ? onChainRecipientStudent.usn : (certificate.student?.usn || null),
+              college: onChainRecipientStudent ? onChainRecipientStudent.college : (certificate.student?.college || null),
+            },
+          };
+
+          if (isRevokedOnChain) {
+            status = "REVOKED";
+          } else if (isExpiredOnChain) {
+            status = "EXPIRED";
+          } else {
+            status = "VALID";
+          }
+        } else {
+          blockchainVerification.liveChecked = true;
+        }
+      } catch (chainErr) {
+        console.warn("[LIVE ON-CHAIN DOCUMENT VERIFICATION NOTICE]:", chainErr.message);
+      }
+    }
+
     // Resolve human-readable issuer name
     let issuerName = certificate.issuer;
     if (certificate.issuingOrganisation) {
@@ -193,6 +400,7 @@ export const verifyDocument = async (req, res) => {
       valid: status === "VALID",
       status,
       computedHash,
+      blockchain: blockchainVerification,
       certificate: {
         _id: certificate._id,
         certificateName: certificate.certificateName,

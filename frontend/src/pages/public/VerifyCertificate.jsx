@@ -44,7 +44,10 @@ const VerifyCertificate = () => {
   }, [certificateId]);
 
   const cert = data?.certificate;
-  const statusKey = cert?.verificationStatus || cert?.blockchainStatus || data?.status || "PENDING";
+  const onChainStatus = data?.blockchain?.verifiedOnChain
+    ? (data.blockchain.onChainRevoked ? "REVOKED" : "VERIFIED")
+    : null;
+  const statusKey = onChainStatus || data?.status || cert?.verificationStatus || "PENDING";
   const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.PENDING;
   const isVerified = statusKey === "Verified" || statusKey === "VERIFIED" || statusKey === "VALID";
   const isRevoked = statusKey === "Revoked" || statusKey === "REVOKED";
@@ -146,17 +149,103 @@ const VerifyCertificate = () => {
 
             {/* Blockchain Details Card */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-6 mb-4 shadow-xl">
-              <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center justify-between">
-                <span>Blockchain Information</span>
-                <span className="text-xs font-normal text-emerald-400">Immutable Ledger</span>
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
+                  <span>⛓️ Blockchain Verification Proof</span>
+                  {data?.blockchain?.verifiedOnChain ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Verified on Smart Contract
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      Database Record
+                    </span>
+                  )}
+                </h2>
+                <span className="text-xs text-slate-400">Ethereum Sepolia Testnet</span>
+              </div>
+
+              {/* Verified Hash */}
               <Row label="Certificate Hash" value={cert.certificateHash} mono />
-              <Row label="Transaction Hash" value={cert.transactionHash || cert.txHash} mono />
-              <Row label="Block Number" value={cert.blockNumber ? String(cert.blockNumber) : "—"} />
-              <Row label="Blockchain Status" value={cert.blockchainStatus || statusKey} />
-              {cert.verificationTimestamp && (
-                <Row label="Verified At" value={formatDate(cert.verificationTimestamp)} />
+
+              {/* Verified By (Who) */}
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-3 border-b border-white/5">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Verified By (Organisation)</span>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-emerald-400 block">
+                    {data?.blockchain?.verifiedBy?.name || cert.organisation?.organisationName || cert.issuer || "Authorized Organisation"}
+                  </span>
+                  {data?.blockchain?.verifiedBy?.organisationId && (
+                    <span className="text-[11px] font-mono text-slate-400 block break-all">
+                      On-Chain ID: {data.blockchain.verifiedBy.organisationId}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Verified For (Whom) */}
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-3 border-b border-white/5">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Issued To (Recipient)</span>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-gray-200 block">
+                    {data?.blockchain?.verifiedFor?.name || cert.student?.name || "Verified Student"}
+                    {data?.blockchain?.verifiedFor?.usn ? ` (${data.blockchain.verifiedFor.usn})` : ""}
+                  </span>
+                  {data?.blockchain?.verifiedFor?.applicantId && (
+                    <span className="text-[11px] font-mono text-slate-400 block break-all">
+                      On-Chain Applicant ID: {data.blockchain.verifiedFor.applicantId}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Smart Contract */}
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-3 border-b border-white/5">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Smart Contract</span>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${data?.blockchain?.contractAddress || "0x6F63aBd698dA20Ec1ea4B70A8093253dD290fbC2"}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-400 hover:text-blue-300 hover:underline font-mono text-right break-all"
+                >
+                  {data?.blockchain?.contractAddress || "0x6F63aBd698dA20Ec1ea4B70A8093253dD290fbC2"} ↗
+                </a>
+              </div>
+
+              {/* On-Chain Timestamps */}
+              {data?.blockchain?.onChainIssuedAt && (
+                <Row label="On-Chain Block Timestamp" value={formatDate(data.blockchain.onChainIssuedAt)} />
               )}
+              {data?.blockchain?.onChainExpiresAt && (
+                <Row label="On-Chain Expiry" value={formatDate(data.blockchain.onChainExpiresAt)} />
+              )}
+
+              {/* Transaction Proof */}
+              {cert.transactionHash && (
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 py-3 border-b border-white/5 last:border-0">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Proof</span>
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${cert.transactionHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-400 hover:text-blue-300 hover:underline font-mono text-right break-all"
+                  >
+                    {cert.transactionHash} ↗
+                  </a>
+                </div>
+              )}
+
+              <Row
+                label="On-Chain Status"
+                value={
+                  data?.blockchain?.verifiedOnChain
+                    ? data?.blockchain?.onChainRevoked
+                      ? "⊘ Revoked On-Chain"
+                      : "✓ Active & Authenticated on Ethereum Sepolia"
+                    : statusKey
+                }
+              />
             </div>
 
             {/* Action Buttons */}

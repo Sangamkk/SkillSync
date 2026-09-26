@@ -3,6 +3,7 @@ import Certificate from "../models/Certificate.js";
 import Project from "../models/Project.js";
 import Employment from "../models/Employment.js";
 import OrganisationApplication from "../models/OrganisationApplication.js";
+import { resolveCertificatesWithOnChain } from "./blockchainSync.service.js";
 
 /**
  * Get student profile by MongoDB _id.
@@ -19,21 +20,20 @@ export const getProfile = async (userId) => {
  * Get full professional profile (certs, projects, employment) for a student.
  */
 export const getFullProfile = async (studentId) => {
-    const [certificates, projects, employmentRecords] = await Promise.all([
+    const [studentUser, certificates, projects, employmentRecords] = await Promise.all([
+        User.findById(studentId).select("applicantId").lean(),
         Certificate.find({ student: studentId })
-            .populate("issuingOrganisation", "organisationName walletAddress")
+            .populate("issuingOrganisation", "organisationName walletAddress organisationId")
             .sort({ createdAt: -1 })
             .lean(),
         Project.find({ student: studentId }).sort({ createdAt: -1 }).lean(),
         Employment.find({ student: studentId }).populate("job").lean(),
     ]);
 
-    const resolvedCertificates = certificates.map((cert) => ({
-        ...cert,
-        verifiedBy: cert.issuingOrganisation?.organisationName || (cert.verificationStatus === "Verified" ? cert.issuer : ""),
-        issuerWallet: cert.issuingOrganisation?.walletAddress || cert.issuerWallet || "",
-        verificationDate: cert.updatedAt ? Math.floor(new Date(cert.updatedAt).getTime() / 1000) : null,
-    }));
+    const resolvedCertificates = await resolveCertificatesWithOnChain(
+        certificates,
+        studentUser?.applicantId
+    );
 
     // Resolve organisation for each employment record
     const resolvedEmployment = await Promise.all(

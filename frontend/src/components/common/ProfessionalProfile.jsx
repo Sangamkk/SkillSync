@@ -363,15 +363,20 @@ const ProfessionalProfile = ({
                           )}
 
                           <span
-                            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
-                              certificate.verificationStatus === "Verified"
-                                ? "bg-emerald-500/10 text-emerald-400"
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                              certificate.verifiedOnChain || certificate.verificationStatus === "Verified"
+                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                                 : certificate.verificationStatus === "Rejected"
-                                ? "bg-rose-500/10 text-rose-400"
-                                : "bg-amber-500/10 text-amber-400"
+                                ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                             }`}
                           >
-                            {certificate.verificationStatus || "Pending"}
+                            {certificate.verifiedOnChain && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            )}
+                            {certificate.verifiedOnChain
+                              ? "Verified On-Chain"
+                              : certificate.verificationStatus || "Pending"}
                           </span>
                         </div>
                       </div>
@@ -379,11 +384,12 @@ const ProfessionalProfile = ({
                       <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
                         <p><span className="font-semibold text-slate-500">Issuer:</span> {certificate.issuer || "—"}</p>
                         <p><span className="font-semibold text-slate-500">Issuer Wallet:</span> {certificate.issuerWallet ? formatHash(certificate.issuerWallet) : "—"}</p>
-                        <p><span className="font-semibold text-slate-500">Verified by:</span> {certificate.verifiedBy || "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Verified by:</span> <span className={certificate.verifiedOnChain ? "text-emerald-400 font-semibold" : ""}>{certificate.verifiedBy || "—"}</span></p>
                         <p><span className="font-semibold text-slate-500">Type:</span> {certificate.certificateType || "—"}</p>
                         <p><span className="font-semibold text-slate-500">Hash:</span> <span className="font-mono text-[10px]">{certificate.certificateHash ? `${certificate.certificateHash.slice(0, 12)}...` : "—"}</span></p>
+                        <p><span className="font-semibold text-slate-500">Verification Source:</span> {certificate.verifiedOnChain ? <span className="text-emerald-400 font-medium">⛓️ Ethereum Sepolia Smart Contract</span> : "Database"}</p>
                         <p><span className="font-semibold text-slate-500">Issued:</span> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString() : "—"}</p>
-                        <p><span className="font-semibold text-slate-500">Verified:</span> {formatVerificationDate(certificate.verificationDate)}</p>
+                        <p><span className="font-semibold text-slate-500">Verified At:</span> {formatVerificationDate(certificate.verificationDate)}</p>
                       </div>
 
                       {(certificate.requestHistory || []).length > 0 && (

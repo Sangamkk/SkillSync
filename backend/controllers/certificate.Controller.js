@@ -9,6 +9,7 @@ import VerificationRequest from "../models/VerificationRequest.js";
 import { uploadToCloudinary } from "../services/cloudinaryService.js";
 import { certificateManager } from "../blockchain/contracts.js";
 import { getRawPublicId } from "../utils/cloudinaryUtils.js";
+import { resolveCertificatesWithOnChain } from "../services/blockchainSync.service.js";
 
 // ─── Credential Type map (matches Types.CredentialType enum) ─────────────────
 const CREDENTIAL_TYPE_MAP = {
@@ -120,21 +121,22 @@ export const uploadCertificate = async (req, res) => {
 };
 
 // ─── GET /api/certificate/my ──────────────────────────────────────────────────
-/** Student gets their own certificates (from JWT). */
+/** Student gets their own certificates (from JWT) with on-chain smart contract truth. */
 export const getMyCertificates = async (req, res) => {
   try {
     const studentId = req.user?.userId || req.user?._id;
-    const certificates = await Certificate.find({ student: studentId })
-      .populate("issuingOrganisation", "organisationName walletAddress")
-      .sort({ createdAt: -1 })
-      .lean();
+    const [studentUser, certificates] = await Promise.all([
+      User.findById(studentId).select("applicantId").lean(),
+      Certificate.find({ student: studentId })
+        .populate("issuingOrganisation", "organisationName walletAddress organisationId")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
 
-    const formattedCertificates = certificates.map((cert) => ({
-      ...cert,
-      verifiedBy: cert.issuingOrganisation?.organisationName || (cert.verificationStatus === "Verified" ? cert.issuer : ""),
-      issuerWallet: cert.issuingOrganisation?.walletAddress || cert.issuerWallet || "",
-      verificationDate: cert.updatedAt ? Math.floor(new Date(cert.updatedAt).getTime() / 1000) : null,
-    }));
+    const formattedCertificates = await resolveCertificatesWithOnChain(
+      certificates,
+      studentUser?.applicantId
+    );
 
     return res.status(200).json({ success: true, certificates: formattedCertificates });
   } catch (error) {
@@ -166,17 +168,18 @@ export const getStudentCertificates = async (req, res) => {
       });
     }
 
-    const certificates = await Certificate.find({ student: studentId })
-      .populate("issuingOrganisation", "organisationName walletAddress")
-      .sort({ createdAt: -1 })
-      .lean();
+    const [studentUser, certificates] = await Promise.all([
+      User.findById(studentId).select("applicantId").lean(),
+      Certificate.find({ student: studentId })
+        .populate("issuingOrganisation", "organisationName walletAddress organisationId")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
 
-    const formattedCertificates = certificates.map((cert) => ({
-      ...cert,
-      verifiedBy: cert.issuingOrganisation?.organisationName || (cert.verificationStatus === "Verified" ? cert.issuer : ""),
-      issuerWallet: cert.issuingOrganisation?.walletAddress || cert.issuerWallet || "",
-      verificationDate: cert.updatedAt ? Math.floor(new Date(cert.updatedAt).getTime() / 1000) : null,
-    }));
+    const formattedCertificates = await resolveCertificatesWithOnChain(
+      certificates,
+      studentUser?.applicantId
+    );
 
     return res.status(200).json({ success: true, certificates: formattedCertificates });
   } catch (error) {
@@ -189,7 +192,7 @@ export const getStudentCertificates = async (req, res) => {
 };
 
 // ─── GET /api/certificate/students/:studentId ─────────────────────────────────
-/** Organisation or Student gets a candidate's certificates. */
+/** Organisation or Student gets a candidate's certificates with on-chain truth. */
 export const getCandidateCertificates = async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -239,17 +242,18 @@ export const getCandidateCertificates = async (req, res) => {
       }
     }
 
-    const certificates = await Certificate.find({ student: studentId })
-      .populate("issuingOrganisation", "organisationName walletAddress")
-      .sort({ createdAt: -1 })
-      .lean();
+    const [studentUser, certificates] = await Promise.all([
+      User.findById(studentId).select("applicantId").lean(),
+      Certificate.find({ student: studentId })
+        .populate("issuingOrganisation", "organisationName walletAddress organisationId")
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
 
-    const formattedCertificates = certificates.map((cert) => ({
-      ...cert,
-      verifiedBy: cert.issuingOrganisation?.organisationName || (cert.verificationStatus === "Verified" ? cert.issuer : ""),
-      issuerWallet: cert.issuingOrganisation?.walletAddress || cert.issuerWallet || "",
-      verificationDate: cert.updatedAt ? Math.floor(new Date(cert.updatedAt).getTime() / 1000) : null,
-    }));
+    const formattedCertificates = await resolveCertificatesWithOnChain(
+      certificates,
+      studentUser?.applicantId
+    );
 
     return res.status(200).json({ success: true, certificates: formattedCertificates });
   } catch (error) {
