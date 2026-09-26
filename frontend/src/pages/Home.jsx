@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import ThreeDBackground from "../components/common/ThreeDBackground";
 import RoleSelector from "../components/common/RoleSelector";
+import HomeDocumentVerifier from "../components/common/HomeDocumentVerifier";
 
 const Home = () => {
     const navigate = useNavigate();
@@ -115,6 +116,18 @@ const Home = () => {
 
                             <button
                                 onClick={() =>
+                                    scrollToSection("verify-document-section")
+                                }
+                                className={`text-sm font-medium transition-colors ${darkMode
+                                    ? "text-slate-300 hover:text-white"
+                                    : "text-slate-600 hover:text-slate-950"
+                                    }`}
+                            >
+                                Verify Document
+                            </button>
+
+                            <button
+                                onClick={() =>
                                     scrollToSection("technology")
                                 }
                                 className={`text-sm font-medium transition-colors ${darkMode
@@ -124,7 +137,6 @@ const Home = () => {
                             >
                                 Technology
                             </button>
-
 
                             <button
                                 onClick={() =>
@@ -164,6 +176,19 @@ const Home = () => {
                                 {darkMode ? "☀️" : "🌙"}
                             </button>
 
+
+                            {/* Verify Document Quick Action */}
+                            <button
+                                onClick={() => scrollToSection("verify-document-section")}
+                                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${
+                                    darkMode
+                                        ? "border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
+                                        : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                }`}
+                                title="Public Document Verification"
+                            >
+                                📄 Verify Document
+                            </button>
 
                             {/* Login */}
                             <button className="px-5 py-2 rounded-md border border-blue-600 text-blue-600 font-medium text-sm transition duration-200 hover:bg-blue-600 hover:text-white" onClick={() => navigate("/login")}>Login</button>
@@ -278,6 +303,17 @@ const Home = () => {
                                         </span>
                                     </button>
 
+                                    <button
+                                        onClick={() =>
+                                            scrollToSection("verify-document-section")
+                                        }
+                                        className={`rounded-xl border px-7 py-3.5 font-semibold transition-all duration-300 hover:-translate-y-1 ${darkMode
+                                            ? "border-violet-500/40 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 shadow-lg shadow-violet-950/20"
+                                            : "border-blue-200 bg-blue-50 text-blue-700 shadow-sm hover:bg-blue-100"
+                                            }`}
+                                    >
+                                        📄 Verify Document
+                                    </button>
 
                                     <button
                                         onClick={() =>
@@ -541,6 +577,30 @@ const Home = () => {
 
 
                 {/* =====================================================
+                    INSTANT DOCUMENT VERIFICATION (PUBLIC)
+                ====================================================== */}
+
+                <section
+                    id="verify-document-section"
+                    className="relative mx-auto max-w-5xl px-6 py-20 lg:px-8"
+                >
+                    <div className="mb-8 text-center">
+                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-500">
+                            Instant Verification
+                        </p>
+                        <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                            Check Document Registration
+                        </h2>
+                        <p className="mt-2 text-slate-400 text-sm max-w-xl mx-auto">
+                            Anyone can upload a certificate to verify if it is authentically issued and registered on the blockchain.
+                        </p>
+                    </div>
+
+                    <HomeDocumentVerifier darkMode={darkMode} />
+                </section>
+
+
+                {/* =====================================================
                     FEATURES
                 ====================================================== */}
 
@@ -689,10 +749,10 @@ const Home = () => {
                             </p>
 
                             <button
-                                onClick={loginRequired}
+                                onClick={() => scrollToSection("verify-document-section")}
                                 className="mt-6 font-semibold text-emerald-500 transition group-hover:text-emerald-400"
                             >
-                                Request Verification →
+                                Verify Document Authenticity →
                             </button>
 
                         </div>

@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyCertificate from "./pages/public/VerifyCertificate";
 import VerifyDocument from "./pages/public/VerifyDocument";
+import CertificateQRPage from "./pages/public/CertificateQRPage";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
@@ -47,6 +48,8 @@ function App() {
         <Route path="/org/register" element={<RegisterOrganisation />} />
 
         {/* Public certificate / document verification — no auth */}
+        <Route path="/verify-qr/:certificateId" element={<CertificateQRPage />} />
+        <Route path="/verify/qr/:certificateId" element={<CertificateQRPage />} />
         <Route path="/verify/:certificateId" element={<VerifyCertificate />} />
         <Route path="/verify-document" element={<VerifyDocument />} />
 

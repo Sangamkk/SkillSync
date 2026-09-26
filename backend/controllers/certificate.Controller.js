@@ -282,9 +282,11 @@ export const getCertificateByHash = async (req, res) => {
 /** Stream certificate PDF. Only accessible to the owning student, issuing org, or admin. */
 export const getCertificateDocument = async (req, res) => {
   try {
-    const certificate = await Certificate.findOne({
-      certificateHash: req.params.hash,
-    });
+    const rawParam = req.params.hash;
+    const isObjectId = mongoose.Types.ObjectId.isValid(rawParam);
+    const certificate = await Certificate.findOne(
+      isObjectId ? { $or: [{ certificateHash: rawParam }, { _id: rawParam }] } : { certificateHash: rawParam }
+    );
 
     if (!certificate?.certificateURL) {
       return res
@@ -296,7 +298,8 @@ export const getCertificateDocument = async (req, res) => {
     const role = req.user?.role;
 
     // Access control
-    if (role === "STUDENT" && certificate.student.toString() !== userId?.toString()) {
+    const studentOwnerId = (certificate.student?._id || certificate.student)?.toString();
+    if (role === "STUDENT" && studentOwnerId && studentOwnerId !== userId?.toString()) {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to view this certificate document",
@@ -340,6 +343,11 @@ export const getCertificateDocument = async (req, res) => {
         }
       }
 
+      // Also allow if the certificate is verified
+      if (!hasAccess && certificate.verificationStatus === "Verified") {
+        hasAccess = true;
+      }
+
       if (!hasAccess) {
         return res.status(403).json({
           success: false,
@@ -363,11 +371,18 @@ export const getCertificateDocument = async (req, res) => {
     if (!documentResponse || !documentResponse.ok) {
       try {
         const publicId = getRawPublicId(certificate.certificateURL);
-        const downloadURL = cloudinary.utils.private_download_url(publicId, undefined, {
+        let downloadURL = cloudinary.utils.private_download_url(publicId, undefined, {
           resource_type: "raw",
           type: "upload",
         });
         documentResponse = await fetch(downloadURL);
+        if (!documentResponse.ok) {
+          downloadURL = cloudinary.utils.private_download_url(publicId, undefined, {
+            resource_type: "image",
+            type: "upload",
+          });
+          documentResponse = await fetch(downloadURL);
+        }
       } catch (signedErr) {
         console.warn("[CERTIFICATE DOCUMENT] Signed download URL fetch failed:", signedErr.message);
       }
@@ -786,6 +801,34 @@ export const revokeCertificate = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error?.shortMessage || error?.reason || error?.message || "Certificate revocation failed",
+    });
+  }
+};
+
+// ─── GET /api/certificate/issued ──────────────────────────────────────────────
+/** Organisation gets all certificates issued or verified by them. */
+export const getIssuedCertificates = async (req, res) => {
+  try {
+    const orgId = req.user?.userId || req.user?._id;
+    const certificates = await Certificate.find({
+      $or: [
+        { issuingOrganisation: orgId },
+        { issuingOrganisation: orgId, issuedByOrganisation: true },
+      ],
+    })
+      .populate("student", "name email usn college")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      certificates,
+    });
+  } catch (error) {
+    console.error("[GET ISSUED CERTIFICATES ERROR]:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+      certificates: [],
     });
   }
 };

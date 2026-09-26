@@ -62,6 +62,14 @@ export const issueCertificate = async (formData) => {
 };
 
 /**
+ * Organisation gets all certificates issued or verified by them.
+ */
+export const getIssuedCertificates = async () => {
+  const response = await api.get("/certificate/issued");
+  return response.data.certificates || response.data || [];
+};
+
+/**
  * Revoke a certificate (ORG/ADMIN).
  * Backend calls blockchain revoke function.
  */

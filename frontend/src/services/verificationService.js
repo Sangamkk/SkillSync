@@ -32,6 +32,13 @@ export const getPendingRequests = async () => {
   return response.data.requests || response.data || [];
 };
 
+/** Organisation: get past request history (Approved, Rejected, etc.). */
+export const getOrganisationRequestHistory = async (status) => {
+  const url = status ? `/verification-requests/history?status=${status}` : "/verification-requests/history";
+  const response = await api.get(url);
+  return response.data.requests || response.data || [];
+};
+
 /** Organisation: approve a request. Backend calls RequestManager. */
 export const approveRequest = async (requestId) => {
   const response = await api.post(`/verification-requests/${requestId}/approve`);

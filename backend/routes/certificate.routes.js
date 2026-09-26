@@ -9,6 +9,7 @@ import {
     getCertificateDocument,
     updateCertificateStatus,
     issueCertificate,
+    getIssuedCertificates,
     revokeCertificate,
 } from "../controllers/certificate.Controller.js";
 import upload from "../config/multer.js";
@@ -16,6 +17,14 @@ import { authenticate } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
+
+// Organisation gets certificates issued by them
+router.get(
+    "/issued",
+    authenticate,
+    authorizeRoles("ORGANISATION"),
+    getIssuedCertificates
+);
 
 // Student uploads own certificate PDF (no blockchain yet)
 router.post(

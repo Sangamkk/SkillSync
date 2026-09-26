@@ -22,11 +22,16 @@ export const verifyCertificate = async (req, res) => {
     }
 
     if (!certificate) {
-      // Try by hash (with or without 0x prefix)
-      const normalizedHash = certificateId.startsWith("0x")
-        ? certificateId
-        : "0x" + certificateId;
-      certificate = await Certificate.findOne({ certificateHash: normalizedHash })
+      // Try by hash with or without 0x prefix
+      const with0x = certificateId.startsWith("0x") ? certificateId : "0x" + certificateId;
+      const without0x = certificateId.startsWith("0x") ? certificateId.slice(2) : certificateId;
+      certificate = await Certificate.findOne({
+        $or: [
+          { certificateHash: with0x },
+          { certificateHash: without0x },
+          { certificateHash: certificateId },
+        ],
+      })
         .populate("student", "name usn college")
         .lean();
     }
@@ -81,6 +86,7 @@ export const verifyCertificate = async (req, res) => {
         expiryDate: certificate.expiryDate,
         verificationStatus: certificate.verificationStatus,
         certificateHash: certificate.certificateHash,
+        certificateURL: certificate.certificateURL,
         transactionHash: certificate.txHash || certificate.blockchainTxHash || null,
         blockchainStored: certificate.blockchainStored,
         issuedByOrganisation: certificate.issuedByOrganisation,
@@ -132,11 +138,18 @@ export const verifyDocument = async (req, res) => {
     }
 
     // Calculate SHA-256 from the raw uploaded bytes
-    const computedHash =
-      "0x" + crypto.createHash("sha256").update(req.file.buffer).digest("hex");
+    const rawHash = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
+    const hashWith0x = "0x" + rawHash;
+    const hashWithout0x = rawHash;
+    const computedHash = hashWith0x;
 
     const certificate = await Certificate.findOne({
-      certificateHash: computedHash,
+      $or: [
+        { certificateHash: hashWith0x },
+        { certificateHash: hashWithout0x },
+        { certificateHash: hashWith0x.toLowerCase() },
+        { certificateHash: hashWithout0x.toLowerCase() },
+      ],
     })
       .populate("student", "name usn college")
       .lean();
@@ -163,6 +176,18 @@ export const verifyDocument = async (req, res) => {
     else if (certificate.verificationStatus === "Pending") status = "PENDING";
     else status = "REJECTED";
 
+    // Resolve human-readable issuer name
+    let issuerName = certificate.issuer;
+    if (certificate.issuingOrganisation) {
+      const org = await OrganisationApplication.findById(
+        certificate.issuingOrganisation,
+        { organisationName: 1 }
+      ).lean();
+      if (org && org.organisationName) {
+        issuerName = org.organisationName;
+      }
+    }
+
     return res.status(200).json({
       success: true,
       valid: status === "VALID",
@@ -172,11 +197,12 @@ export const verifyDocument = async (req, res) => {
         _id: certificate._id,
         certificateName: certificate.certificateName,
         certificateType: certificate.certificateType,
-        issuer: certificate.issuer,
+        issuer: issuerName || certificate.issuer,
         issueDate: certificate.issueDate,
         expiryDate: certificate.expiryDate,
         verificationStatus: certificate.verificationStatus,
         certificateHash: certificate.certificateHash,
+        certificateURL: certificate.certificateURL,
         transactionHash: certificate.txHash || certificate.blockchainTxHash || null,
         blockchainStored: certificate.blockchainStored,
         student: certificate.student

@@ -407,6 +407,39 @@ export const getPendingRequests = async (req, res) => {
   }
 };
 
+// ─── GET /api/verification-requests/history ─────────────────────────────────
+/** Organisation gets past verification requests (Approved, Rejected, etc.). */
+export const getOrganisationRequestHistory = async (req, res) => {
+  try {
+    const orgId = req.user?.userId || req.user?._id;
+    const { status } = req.query;
+
+    const query = { organisation: orgId };
+    if (status && status !== "All") {
+      query.status = status;
+    } else {
+      query.status = { $ne: "Pending" };
+    }
+
+    const requests = await VerificationRequest.find(query)
+      .populate("certificate", "certificateName certificateType certificateHash issuer issueDate expiryDate certificateURL verificationStatus")
+      .populate("student", "name email usn college")
+      .populate("project", "projectName projectType githubLink githubHash status")
+      .sort({ updatedAt: -1, createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      requests,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+      requests: [],
+    });
+  }
+};
+
 // ─── POST /api/verification-requests/:id/approve ──────────────────────────────
 /**
  * Organisation approves a verification request.

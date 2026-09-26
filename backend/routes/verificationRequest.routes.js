@@ -6,6 +6,7 @@ import {
     createProjectVerificationRequest,
     getMyRequests,
     getPendingRequests,
+    getOrganisationRequestHistory,
     approveRequest,
     rejectRequest,
     cancelRequest,
@@ -43,6 +44,14 @@ router.get(
     authenticate,
     authorizeRoles("ORGANISATION"),
     getPendingRequests
+);
+
+// Organisation: get past request history (Approved, Rejected, etc.)
+router.get(
+    "/history",
+    authenticate,
+    authorizeRoles("ORGANISATION"),
+    getOrganisationRequestHistory
 );
 
 // Organisation: approve a request (triggers blockchain)

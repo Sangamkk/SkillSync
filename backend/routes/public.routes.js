@@ -11,8 +11,20 @@ const router = express.Router();
 // GET /api/public/verify/:certificateId
 router.get("/verify/:certificateId", verifyCertificate);
 
+const documentUpload = (req, res, next) => {
+    upload.any()(req, res, (err) => {
+        if (err) return next(err);
+        if (req.files && req.files.length > 0) {
+            req.file =
+                req.files.find((f) => f.fieldname === "file" || f.fieldname === "certificate") ||
+                req.files[0];
+        }
+        next();
+    });
+};
+
 // Public — no auth required
 // POST /api/public/verify-document
-router.post("/verify-document", upload.single("file"), verifyDocument);
+router.post("/verify-document", documentUpload, verifyDocument);
 
 export default router;

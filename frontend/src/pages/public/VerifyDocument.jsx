@@ -42,6 +42,7 @@ const OUTCOMES = {
 
 const VerifyDocument = () => {
   const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -50,11 +51,19 @@ const VerifyDocument = () => {
 
   const handleFile = (f) => {
     if (!f) return;
-    if (f.type !== "application/pdf") {
-      setError("Please upload a PDF file.");
+    const isPdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
+    const isImage = f.type.startsWith("image/") || /\.(png|jpe?g|webp)$/i.test(f.name);
+
+    if (!isPdf && !isImage) {
+      setError("Please upload a valid certificate file (PDF, PNG, JPG, or WebP).");
       return;
     }
     setFile(f);
+    if (isImage) {
+      setPreviewUrl(URL.createObjectURL(f));
+    } else {
+      setPreviewUrl(null);
+    }
     setResult(null);
     setError("");
   };
@@ -68,7 +77,7 @@ const VerifyDocument = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
-      setError("Please select a PDF file to verify.");
+      setError("Please select a certificate file (PDF or Image) to verify.");
       return;
     }
     setLoading(true);
@@ -107,7 +116,7 @@ const VerifyDocument = () => {
           <p className="text-xs font-semibold uppercase tracking-widest text-violet-500 mb-1">Verify Document</p>
           <h1 className="text-3xl font-bold mb-2">Document Hash Verification</h1>
           <p className="text-gray-400 text-sm">
-            Upload a certificate PDF to verify its authenticity against the blockchain. The backend will hash the document and compare it to records stored on-chain.
+            Upload a certificate PDF or image to verify its authenticity against the blockchain. The backend will hash the document and compare it to records stored on-chain.
           </p>
         </div>
 
@@ -129,22 +138,35 @@ const VerifyDocument = () => {
             <input
               ref={inputRef}
               type="file"
-              accept="application/pdf"
+              accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
               className="hidden"
               onChange={(e) => handleFile(e.target.files?.[0])}
             />
             {file ? (
-              <>
-                <p className="text-4xl mb-3">📄</p>
+              <div className="flex flex-col items-center">
+                {previewUrl ? (
+                  <div className="relative mb-3">
+                    <img
+                      src={previewUrl}
+                      alt="Certificate Preview"
+                      className="h-28 max-w-xs object-contain rounded-xl border border-emerald-500/30 shadow-md bg-black/20"
+                    />
+                    <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow">
+                      Image
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-4xl mb-3">📄</p>
+                )}
                 <p className="text-emerald-400 font-medium">{file.name}</p>
-                <p className="text-gray-500 text-xs mt-1">{(file.size / 1024).toFixed(1)} KB · PDF</p>
+                <p className="text-gray-500 text-xs mt-1">{(file.size / 1024).toFixed(1)} KB · {previewUrl ? "Image" : "PDF"}</p>
                 <p className="text-gray-600 text-xs mt-2">Click to change file</p>
-              </>
+              </div>
             ) : (
               <>
                 <p className="text-4xl mb-3">☁️</p>
-                <p className="text-gray-300 font-medium">Drop your PDF here or click to browse</p>
-                <p className="text-gray-500 text-xs mt-1">Only PDF files are supported</p>
+                <p className="text-gray-300 font-medium">Drop your PDF or Certificate Image here</p>
+                <p className="text-gray-500 text-xs mt-1">Supports PDF, PNG, JPG, JPEG, and WebP</p>
               </>
             )}
           </div>
@@ -181,17 +203,32 @@ const VerifyDocument = () => {
             </div>
 
             {cert && (
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-3">
                 {cert.certificateName && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Certificate</span>
-                    <span className="text-gray-200">{cert.certificateName}</span>
+                    <span className="text-gray-200 font-medium">{cert.certificateName}</span>
+                  </div>
+                )}
+                {cert.student?.name && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Issued To</span>
+                    <span className="text-gray-200">
+                      {cert.student.name}
+                      {cert.student.usn ? ` (${cert.student.usn})` : ""}
+                    </span>
+                  </div>
+                )}
+                {cert.issuer && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Issuing Authority</span>
+                    <span className="text-gray-200">{cert.issuer}</span>
                   </div>
                 )}
                 {cert.certificateHash && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Hash</span>
-                    <span className="font-mono text-gray-300 text-xs break-all text-right">{cert.certificateHash}</span>
+                    <span className="text-gray-500">SHA-256 Hash</span>
+                    <span className="font-mono text-gray-300 text-xs break-all text-right max-w-xs">{cert.certificateHash}</span>
                   </div>
                 )}
                 {cert.transactionHash && (
@@ -203,20 +240,36 @@ const VerifyDocument = () => {
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:underline font-mono text-xs"
                     >
-                      {cert.transactionHash.slice(0, 14)}…
+                      {cert.transactionHash.slice(0, 16)}… ↗
                     </a>
                   </div>
                 )}
-                {cert._id && (
-                  <div className="mt-3 pt-3 border-t border-white/5">
-                    <Link
-                      to={`/verify/${cert._id}`}
-                      className="text-violet-400 text-xs hover:underline"
+
+                {/* Direct Action Buttons */}
+                <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row gap-2.5">
+                  <Link
+                    to={`/verify/${cert.certificateHash || cert._id}`}
+                    className="flex-1 py-2.5 px-4 rounded-xl text-center bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-semibold hover:opacity-90 transition shadow"
+                  >
+                    Produce Status of Certificate Page →
+                  </Link>
+                  <Link
+                    to={`/verify-qr/${cert.certificateHash || cert._id}`}
+                    className="py-2.5 px-4 rounded-xl text-center border border-violet-500/40 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 text-xs font-semibold transition"
+                  >
+                    📱 View QR Code
+                  </Link>
+                  {cert.certificateURL && (
+                    <a
+                      href={cert.certificateURL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-2.5 px-3 rounded-xl text-center border border-white/10 hover:bg-white/10 text-gray-300 text-xs font-semibold transition"
                     >
-                      View full certificate verification page →
-                    </Link>
-                  </div>
-                )}
+                      👁️ View Document
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>

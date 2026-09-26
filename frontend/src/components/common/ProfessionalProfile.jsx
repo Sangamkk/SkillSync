@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { loadProfessionalProfile, normalizeHash } from "../../services/professionalProfileService";
+import { getCertificateDocument } from "../../services/certificateService";
 
 const formatHash = (value) => {
   if (!value) return "—";
@@ -35,6 +37,110 @@ const ProfessionalProfile = ({
   const [certificates, setCertificates] = useState([]);
   const [employmentHistory, setEmploymentHistory] = useState({ currentEmployment: [], previousEmployment: [] });
   const [loading, setLoading] = useState(true);
+  const [viewingCertId, setViewingCertId] = useState(null);
+
+  const handleViewCertificate = async (certificate) => {
+    const certId = certificate._id || certificate.certificateHash;
+    const directUrl = certificate.certificateURL;
+    const hashOrId = certificate.certificateHash || certificate._id;
+
+    if (!directUrl && !hashOrId) {
+      alert("No certificate document or hash available for this certificate.");
+      return;
+    }
+
+    setViewingCertId(certId);
+
+    // Open blank window immediately to prevent browser popup blockers
+    const docWindow = window.open("about:blank", "_blank");
+    if (!docWindow) {
+      setViewingCertId(null);
+      alert("Popup blocked by browser. Please allow popups for this site.");
+      return;
+    }
+
+    docWindow.opener = null;
+
+    try {
+      docWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Loading Certificate - ${certificate.certificateName || "SkillSync"}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              body {
+                margin: 0;
+                background-color: #0b1020;
+                color: #e2e8f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              }
+              .loader-card {
+                text-align: center;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                padding: 32px 40px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+              }
+              .spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid rgba(139, 92, 246, 0.2);
+                border-top-color: #8b5cf6;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin: 0 auto 16px;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+              h3 { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: #f8fafc; }
+              p { margin: 0; font-size: 13px; color: #94a3b8; }
+            </style>
+          </head>
+          <body>
+            <div class="loader-card">
+              <div class="spinner"></div>
+              <h3>Loading Certificate</h3>
+              <p>Fetching verified document for viewing...</p>
+            </div>
+          </body>
+        </html>
+      `);
+    } catch {
+      // ignore
+    }
+
+    try {
+      // 1. Try secure streaming endpoint from backend
+      if (hashOrId) {
+        try {
+          const docBlobUrl = await getCertificateDocument(hashOrId);
+          docWindow.location.href = docBlobUrl;
+          return;
+        } catch (streamErr) {
+          console.warn("Backend document stream failed, trying direct URL fallback:", streamErr);
+        }
+      }
+
+      // 2. Fallback to direct URL if available
+      if (directUrl) {
+        docWindow.location.href = directUrl;
+        return;
+      }
+
+      throw new Error("Certificate document file not available.");
+    } catch (err) {
+      console.error("View certificate error:", err);
+      docWindow.close();
+      alert("Failed to load certificate document: " + (err.response?.data?.message || err.message));
+    } finally {
+      setViewingCertId(null);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -186,35 +292,113 @@ const ProfessionalProfile = ({
               <p className="text-sm text-slate-400">No certificates available.</p>
             ) : (
               <div className="space-y-3">
-                {certificates.map((certificate) => (
-                  <div key={certificate._id || certificate.certificateHash} className={`rounded-2xl border p-4 ${darkMode ? "border-white/10 bg-[#0b1020]" : "border-slate-200 bg-white"}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">{certificate.certificateName || "Certificate"}</p>
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${certificate.verificationStatus === "Verified" ? "bg-emerald-500/10 text-emerald-400" : certificate.verificationStatus === "Rejected" ? "bg-rose-500/10 text-rose-400" : "bg-amber-500/10 text-amber-400"}`}>
-                        {certificate.verificationStatus || "Pending"}
-                      </span>
-                    </div>
-                    <div className="mt-2 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
-                      <p><span className="font-semibold text-slate-500">Issuer:</span> {certificate.issuer || "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Issuer Wallet:</span> {certificate.issuerWallet ? formatHash(certificate.issuerWallet) : "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Verified by:</span> {certificate.verifiedBy || "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Type:</span> {certificate.certificateType || "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Hash:</span> <span className="font-mono text-[10px]">{certificate.certificateHash ? `${certificate.certificateHash.slice(0, 12)}...` : "—"}</span></p>
-                      <p><span className="font-semibold text-slate-500">Issued:</span> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString() : "—"}</p>
-                      <p><span className="font-semibold text-slate-500">Verified:</span> {formatVerificationDate(certificate.verificationDate)}</p>
-                    </div>
-                    {(certificate.requestHistory || []).length > 0 && (
-                      <div className="mt-3 border-t border-slate-200/60 pt-3 text-xs text-slate-400">
-                        <p className="font-semibold text-slate-500">Verification Requests</p>
-                        {certificate.requestHistory.map((request) => (
-                          <p key={request.requestId} className="mt-1">
-                            #{request.requestId} {request.status} {request.expectedVerifierName || formatHash(request.expectedVerifier)}
-                          </p>
-                        ))}
+                {certificates.map((certificate) => {
+                  const certId = certificate._id || certificate.certificateHash;
+                  const isViewingThis = viewingCertId === certId;
+
+                  return (
+                    <div
+                      key={certId}
+                      className={`rounded-2xl border p-4 transition-all duration-200 hover:border-violet-500/40 ${
+                        darkMode ? "border-white/10 bg-[#0b1020]" : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleViewCertificate(certificate)}
+                            className="group flex items-center gap-2 text-left font-semibold transition-colors hover:text-violet-400"
+                            title="Click to view certificate document"
+                          >
+                            <span className="text-sm group-hover:underline">
+                              {certificate.certificateName || "Certificate"}
+                            </span>
+                            <span className="text-xs text-violet-400 opacity-70 transition-opacity group-hover:opacity-100">
+                              ↗
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleViewCertificate(certificate)}
+                            disabled={isViewingThis}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                              darkMode
+                                ? "border border-violet-500/30 bg-violet-600/20 text-violet-300 hover:bg-violet-600/30"
+                                : "border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                            } ${isViewingThis ? "cursor-not-allowed opacity-60" : "cursor-pointer active:scale-95"}`}
+                            title="Open certificate document in a new tab"
+                          >
+                            {isViewingThis ? (
+                              <>
+                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-violet-400 border-t-transparent" />
+                                <span>Loading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>👁️</span>
+                                <span>View Document</span>
+                              </>
+                            )}
+                          </button>
+
+                          {(certificate.certificateHash || certificate._id) && (
+                            <Link
+                              to={`/verify-qr/${certificate.certificateHash || certificate._id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                                darkMode
+                                  ? "border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                                  : "border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
+                              title="Generate verification QR code"
+                            >
+                              <span>🔍</span>
+                              <span>Verify</span>
+                            </Link>
+                          )}
+
+                          <span
+                            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
+                              certificate.verificationStatus === "Verified"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : certificate.verificationStatus === "Rejected"
+                                ? "bg-rose-500/10 text-rose-400"
+                                : "bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            {certificate.verificationStatus || "Pending"}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
+                        <p><span className="font-semibold text-slate-500">Issuer:</span> {certificate.issuer || "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Issuer Wallet:</span> {certificate.issuerWallet ? formatHash(certificate.issuerWallet) : "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Verified by:</span> {certificate.verifiedBy || "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Type:</span> {certificate.certificateType || "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Hash:</span> <span className="font-mono text-[10px]">{certificate.certificateHash ? `${certificate.certificateHash.slice(0, 12)}...` : "—"}</span></p>
+                        <p><span className="font-semibold text-slate-500">Issued:</span> {certificate.issueDate ? new Date(certificate.issueDate).toLocaleDateString() : "—"}</p>
+                        <p><span className="font-semibold text-slate-500">Verified:</span> {formatVerificationDate(certificate.verificationDate)}</p>
+                      </div>
+
+                      {(certificate.requestHistory || []).length > 0 && (
+                        <div className="mt-3 border-t border-slate-200/60 pt-3 text-xs text-slate-400">
+                          <p className="font-semibold text-slate-500">Verification Requests</p>
+                          {certificate.requestHistory.map((request) => (
+                            <p key={request.requestId} className="mt-1">
+                              #{request.requestId} {request.status} {request.expectedVerifierName || formatHash(request.expectedVerifier)}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
